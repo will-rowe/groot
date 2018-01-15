@@ -1,0 +1,17 @@
+sudo: required
+dist: precise
+language: go
+
+go:
+ - 1.9
+
+before_install:
+  - sh ./testing/run_install_dependencies.sh
+
+install:
+ - go get -d -t -v ./...
+ - go build -v ./...
+ - go test -v ./...
+
+script:
+ - sh ./testing/run_travis_tests.sh
