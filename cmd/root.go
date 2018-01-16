@@ -45,9 +45,9 @@ var RootCmd = &cobra.Command{
  GROOT is a tool to type Antibiotic Resistance Genes (ARGs) in metagenomic samples.
 
  It combines variation graph representation of gene sets with an LSH indexing scheme
- to allow for fast classification of metagenomic reads. Subsequent
- hierarchical local alignment of classified reads against graph traversals facilitates
- accurate reconstruction of full-length gene sequences using a simple scoring scheme.
+ to allow for fast classification of metagenomic reads. Subsequent hierarchical local
+ alignment of classified reads against graph traversals facilitates accurate reconstruction
+ of full-length gene sequences using a simple scoring scheme.
 
  GROOT can output an ARG alignment file, as well as a typing report.`,
 }

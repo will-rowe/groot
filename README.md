@@ -1,12 +1,12 @@
-<dl align="center">
-<h1><br><a href=""><img src="paper/img/misc/groot-logo.png" alt="groot" width="250"></a><br>G R O O T</h1>
-<h3><a style="color:#FF6600">G</a>raphing <a style="color:#FF6600">R</a>esistance genes <a style="color:#FF6600">O</a>ut <a style="color:#FF6600">O</a>f me<a style="color:#FF6600">T</a>agenomes</h3>
-<p>
-<a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
-<a href=""><img src="https://img.shields.io/badge/stability-stable-green.svg" alt="status"></a>
-<a href="https://will-rowe.gitbooks.io/groot"><img src="https://img.shields.io/badge/docs-passing-green.svg" alt="Documentation Status"></a>
-</p>
-</dl>
+<div align="center">
+  <img src="paper/img/misc/groot-logo.png?raw=true?" alt="groot-logo" width="250">
+  <br><br>
+  <h1>GROOT</h1>
+  <h3><a style="color:#FF6600">G</a>raphing <a style="color:#FF6600">R</a>esistance genes <a style="color:#FF6600">O</a>ut <a style="color:#FF6600">O</a>f me<a style="color:#FF6600">T</a>agenomes</h3>
+  <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
+  <a href=""><img src="https://img.shields.io/badge/stability-stable-green.svg" alt="status"></a>
+  <a href="https://will-rowe.gitbooks.io/groot"><img src="https://img.shields.io/badge/docs-passing-green.svg" alt="Documentation Status"></a>
+</div>
 
 ***
 
