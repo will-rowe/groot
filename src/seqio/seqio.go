@@ -101,15 +101,13 @@ func (self *FASTQread) RevComplement() {
 
 // method to split sequence to k-mers + get minhash signature
 func (self *Sequence) RunMinHash(k int, sigSize int) *minhash.MinHash {
-	kmers := make([][]byte, len(self.Seq)-(k-1))
-	for i := range self.Seq {
-		if k <= len(self.Seq)-i {
-			kmers[i] = self.Seq[i : i+k]
-		}
-	}
 	minhash := minhash.NewMinHash(spooky.Hash64, farm.Hash64, sigSize)
-	for _, kmer := range kmers {
-		minhash.Add(append(kmer))
+	for i := range self.Seq {
+		if k > len(self.Seq)-i {
+			break
+		}
+		// create a new k-mer slice from a range of the sequence array and add it to the minhash
+		minhash.Add(append(self.Seq[i : i+k]))
 	}
 	return minhash
 }
