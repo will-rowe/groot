@@ -75,27 +75,35 @@ func init() {
 func alignParamCheck() error {
 	// check the supplied FASTQ file(s)
 	if len(*fastq) == 0 {
-		misc.ErrorCheck(errors.New("need to provide at least one FASTQ file"))
-	}
-	for _, fastqFile := range *fastq {
-		if _, err := os.Stat(fastqFile); err != nil {
-			if os.IsNotExist(err) {
-				return errors.New(fmt.Sprintf("FASTQ file does not exist: %v", fastqFile))
+		stat, err := os.Stdin.Stat()
+		if err != nil {
+			return errors.New(fmt.Sprintf("error with STDIN"))
+		}
+		if (stat.Mode() & os.ModeNamedPipe) == 0 {
+			return errors.New(fmt.Sprintf("no STDIN found"))
+		}
+		log.Printf("\tinput file: using STDIN")
+	} else {
+		for _, fastqFile := range *fastq {
+			if _, err := os.Stat(fastqFile); err != nil {
+				if os.IsNotExist(err) {
+					return errors.New(fmt.Sprintf("FASTQ file does not exist: %v", fastqFile))
+				} else {
+					return errors.New(fmt.Sprintf("can't access FASTQ file (check permissions): %v", fastqFile))
+				}
+			}
+			splitFilename := strings.Split(fastqFile, ".")
+			if splitFilename[len(splitFilename)-1] == "gz" {
+				if splitFilename[len(splitFilename)-2] == "fastq" || splitFilename[len(splitFilename)-2] == "fq" {
+					continue
+				}
 			} else {
-				return errors.New(fmt.Sprintf("can't access FASTQ file (check permissions): %v", fastqFile))
+				if splitFilename[len(splitFilename)-1] == "fastq" || splitFilename[len(splitFilename)-1] == "fq" {
+					continue
+				}
 			}
+			return errors.New(fmt.Sprintf("does not look like a FASTQ file: %v", fastqFile))
 		}
-		splitFilename := strings.Split(fastqFile, ".")
-		if splitFilename[len(splitFilename)-1] == "gz" {
-			if splitFilename[len(splitFilename)-2] == "fastq" || splitFilename[len(splitFilename)-2] == "fq" {
-				continue
-			}
-		} else {
-			if splitFilename[len(splitFilename)-1] == "fastq" || splitFilename[len(splitFilename)-1] == "fq" {
-				continue
-			}
-		}
-		return errors.New(fmt.Sprintf("does not look like a FASTQ file: %v", fastqFile))
 	}
 	// check the index directory and files
 	if *indexDir == "" {
