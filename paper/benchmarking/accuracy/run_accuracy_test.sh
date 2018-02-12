@@ -2,10 +2,6 @@
 #
 # This test checks the seeding and alignment accuracy of the program
 #
-# The CAMI metagenomic dataset is spiked with ARGs from the CARD database
-# Randomreads are generated at the specified coverage level (errors are allowed)
-# Groot and ARGOAP are both run
-#
 # run with parallel using a command like:
 # cat test-read-set-sizes | parallel --gnu "sh run_accuracy_test.sh {}"
 #

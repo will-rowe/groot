@@ -55,10 +55,12 @@ tail -n +1 *.fna > genomes.fna
 sed '/^==>/ d' < genomes.fna > ../groot-reference-data.fna
 cd ..
 randomreads.sh ref=groot-reference-data.fna len=${READ_LEN} out=groot-reads.fq metagenome=true coverage=${COVERAGE} adderrors=true maxsnps=0 maxinss=0 maxdels=0 maxsubs=0 > /dev/null 2>&1
-split -l $(($(wc -l < groot-reads.fq) / 2)) groot-reads.fq split
-mv splitaa groot-reads_1.fq
-mv splitab groot-reads_2.fq
-rm groot-reads.fq
+wget http://kirill-kryukov.com/study/tools/fastq-splitter/fastq-splitter-0.1.2.zip
+unzip fastq-splitter-0.1.2.zip
+perl fastq-splitter.pl --n 2 groot-reads.fq
+mv groot-reads.fq.part-1 groot-reads_1.fq
+mv groot-reads.fq.part-2 groot-reads_2.fq
+rm groot-reads.fq fastq-split*
 
 # install GROOT
 echo "installing GROOT..."
@@ -70,7 +72,7 @@ gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock
 
 # run the alignment and generate report
 echo "aligning the test reads..."
-gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" ./groot align -i groot-index -f groot-reads_1.fq,groot-reads_2.fq -p $THREADS > groot-out.bam
+gtime -o  ../usage-for-coverage-${COVERAGE}-groot.tsv -f "%P\t%e\n" ./groot align -i groot-index -f groot-reads_1.fq,groot-reads_2.fq -p $THREADS > groot-out.bam
 echo "running groot report..."
 ./groot report -i groot-out.bam -c 1 -p $THREADS > groot.report
 
@@ -93,15 +95,16 @@ echo "also found ${fp} false positives" >> results-for-groot.txt
 
 # run ARGsOAP (stage 1)
 echo "running ARGsOAP (stage 1)..."
-git clone  https://github.com/biofuture/Ublastx_stageone.git > /dev/null 2>&1
-cd Ublastx_stageone
+wget https://github.com/biofuture/Ublastx_stageone/archive/Ublastx_stageone.tar.gz && tar -xvf Ublastx_stageone.tar.gz
+cd Ublastx_stageone-Ublastx_stageone
 printf "SampleID\tName\tCategory\n1\tgroot-reads\tblank\n" > input_files.txt
-./ublastx_stage_one -i ../ -o argsOAP-output -m input_files.txt > /dev/null 2>&1
+gtime -o  ../../usage-for-coverage-${COVERAGE}-argsoap.tsv -f "%P\t%e\n" ./ublastx_stage_one -i ../ -o argsOAP-output -m input_files.txt > /dev/null 2>&1
 mkdir ../argOAP-upload
 mv argsOAP-output/extracted.fa ../argOAP-upload/ && mv argsOAP-output/meta_data_online.txt ../argOAP-upload/
 cd ..
 echo "argsOAP stage 1 finished - upload the 2 files in the 'argOAP-upload' directory to http://smile.hku.hk/SARGs and run argsOAP stage 2"
 
 # clean up
-yes | rm -r groo* source_genome* ref Ublastx_stageone
+grep ">" source_genomes/randomARGs.fna > ./spiked-ARGS.fna
+yes | rm -r groo* source_genome* ref Ublastx_stageone*
 echo "done"
