@@ -6,6 +6,7 @@
   <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
   <a href=""><img src="https://img.shields.io/badge/stability-stable-green.svg" alt="status"></a>
   <a href="https://will-rowe.gitbooks.io/groot"><img src="https://img.shields.io/badge/docs-passing-green.svg" alt="Documentation Status"></a>
+  <a href="https://github.com/will-rowe/groot/blob/master/LICENSE"><img src="https://img.shields.io/github/license/mashape/apistatus.svg" alt="License"></a>
 </div>
 
 ***
@@ -19,7 +20,17 @@
 
 ## Installation
 
-Check out the [releases](https://github.com/will-rowe/groot/releases) to download a binary. Alternatively, compile the software from source:
+Check out the [releases](https://github.com/will-rowe/groot/releases) to download a binary. Alternatively, install using Bioconda or compile the software from source.
+
+### Bioconda
+
+```
+conda install groot
+```
+
+> If using Conda, make sure you have added the [Bioconda](https://bioconda.github.io/) channel first.
+
+### Source
 
 `GROOT` is written in Go (v1.9) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
 
