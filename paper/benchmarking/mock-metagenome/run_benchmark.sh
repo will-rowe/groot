@@ -47,7 +47,7 @@ done
 
 # randomly sample some ARGs from the CARD database
 echo "sampling CARD genes..."
-bioawk -c fastx -v k=${ARG_SAMPLE_SIZE} '{y=x++<k?x-1:int(rand()*x);if(y<k)a[y]=">"$name"\n"$seq}END{for(z in a)print a[z]}' ../../../../data/full-ARG-databases/card/card-1.1.2.fna > randomARGs.fna
+bioawk -c fastx -v k=${ARG_SAMPLE_SIZE} '{y=x++<k?x-1:int(rand()*x);if(y<k)a[y]=">"$name"\n"$seq}END{for(z in a)print a[z]}' ../../../../../db/full-ARG-databases/card/card-1.1.2.fna > randomARGs.fna
 
 # create artificial metagenome
 echo "creating artificial metagenome..."
@@ -66,9 +66,12 @@ rm groot-reads.fq fastq-split*
 echo "installing GROOT..."
 go build ../../../..
 
+# download the pre-clustered CARD db
+./groot get -d card -i 90
+
 # index the CARD database
 echo "indexing the CARD database..."
-gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" ./groot index -i ../../../data/clustered-ARG-databases/card-90 -o groot-index -l ${READ_LEN} -k ${K_SIZE} -s ${SIG_SIZE} -j ${JS} -p ${THREADS}
+gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" ./groot index -i ./card.90 -o groot-index -l ${READ_LEN} -k ${K_SIZE} -s ${SIG_SIZE} -j ${JS} -p ${THREADS}
 
 # run the alignment and generate report
 echo "aligning the test reads..."

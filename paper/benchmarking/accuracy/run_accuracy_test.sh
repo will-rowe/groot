@@ -31,16 +31,17 @@ mkdir ${NUM_READS} && cd ${NUM_READS}
 
 # create the test reads
 echo "creating test reads..."
-randomreads.sh ref=../../../data/full-ARG-databases/arg-annot-db/argannot-args.fna out=${NUM_READS}-test-reads.fq length=$READ_LEN  reads=$NUM_READS maxsnps=0 maxinss=0 maxdels=0 maxsubs=0 adderrors=false > /dev/null 2>&1
+randomreads.sh ref=../../../../db/full-ARG-databases/arg-annot-db/argannot-args.fna out=${NUM_READS}-test-reads.fq length=$READ_LEN  reads=$NUM_READS maxsnps=0 maxinss=0 maxdels=0 maxsubs=0 adderrors=false > /dev/null 2>&1
 
 # install GROOT
 echo "installing GROOT..."
 go build ../../../..
 go build ../accuracy-test.go
+./groot get -d arg-annot
 
 # index the ARGannot database
 echo "indexing the ARG-annot database..."
-gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" ./groot index -i ../../../data/clustered-ARG-databases/arg-annot-90 -o groot-index -l $READ_LEN -k $K_SIZE -s $SIG_SIZE -j $JS -p $THREADS
+gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" ./groot index -i ./arg-annot.90 -o groot-index -l $READ_LEN -k $K_SIZE -s $SIG_SIZE -j $JS -p $THREADS
 
 # align the test reads
 echo "aligning reads..."
