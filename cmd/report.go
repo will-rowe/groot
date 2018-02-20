@@ -42,7 +42,8 @@ var (
 var reportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "Generate a report from the output of groot align",
-	Long:  `Generate a report from the output of groot align`,
+	Long:  `Generate a report from the output of groot align.
+	Currently only reports: gene, length, read count`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runReport()
 	},

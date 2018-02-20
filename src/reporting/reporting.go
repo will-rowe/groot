@@ -16,11 +16,6 @@ type annotation struct {
 	arg    string
 	count  int
 	length int
-	tpm    float64
-}
-
-func (self *annotation) getTPM(sum float64) {
-	self.tpm = float64(self.count) / float64(self.length) * (1.0 / sum) * 1000000
 }
 
 // TODO - add total number of reads - either do this with a SAM header field or will have to include unmapped reads in SAM
@@ -146,15 +141,8 @@ func (proc *BAMreader) Run() {
 		close(reportChan)
 	}()
 
-	// collect the annotated ARGs and calculate TPMs
-	sumOfRates := 0.0
-	annotations := []annotation{}
+	// collect the annotated ARGs
 	for anno := range reportChan {
-		sumOfRates += float64(anno.count) / float64(anno.length)
-		annotations = append(annotations, anno)
-	}
-	for _, anno := range annotations {
-		anno.getTPM(sumOfRates)
-		fmt.Printf("%v\t%d\t%d\t%.2f\n", anno.arg, anno.count, anno.length, anno.tpm)
+		fmt.Printf("%v\t%d\t%d\n", anno.arg, anno.count, anno.length)
 	}
 }
