@@ -6,22 +6,29 @@ import (
 	"log"
 	"os"
 	"sync"
+	"strconv"
 
 	"github.com/biogo/hts/bam"
 	"github.com/biogo/hts/bgzf"
 	"github.com/biogo/hts/sam"
+
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/plotutil"
+	"gonum.org/v1/plot/vg"
 )
 
 type annotation struct {
-	arg    string
-	count  int
-	length int
+	arg      string
+	count    int
+	length   int
+	coverage plotter.XYs
+	cigar string
 }
-
-// TODO - add total number of reads - either do this with a SAM header field or will have to include unmapped reads in SAM
 
 type BAMreader struct {
 	InputFile      string
+	Plot	bool
 	CoverageCutoff float64
 }
 
@@ -119,18 +126,33 @@ func (proc *BAMreader) Run() {
 				// check we have a fully covered reference
 				pileupCoverage := float64(len(coverageCheck)) / float64(len(pileup))
 				if pileupCoverage >= proc.CoverageCutoff {
-					// get the reference name (remove asterisk if present - from cluster representative)
+					// get the reference name (remove asterisk from cluster representative if it is present)
 					refName := ref.Name()
 					if refName[0] == 42 {
 						refName = refName[1:]
+					}
+					// represent pileup as a CIGAR-ish string (so can see what bases aren't covered)
+					cigar := []string{}
+					// plot coverage for this gene using the pileup
+					coverage := make(plotter.XYs, len(pileup))
+					for i := range coverage {
+						coverage[i].X = float64(i)
+						coverage[i].Y = float64(pileup[i])
+						if pileup[i] == 0 {
+							cigar = append(cigar, "D")
+						} else {
+							cigar = append(cigar, "M")
+						}
 					}
 					// create the annotation
 					anno := annotation{
 						arg:    refName,
 						count:  len(records),
 						length: ref.Len(),
+						coverage: coverage,
+						cigar: cigarClean(cigar),
 					}
-					// send it on
+					// send annotation on
 					sendChan <- anno
 				}
 			}(records, ref, reportChan)
@@ -143,6 +165,58 @@ func (proc *BAMreader) Run() {
 
 	// collect the annotated ARGs
 	for anno := range reportChan {
-		fmt.Printf("%v\t%d\t%d\n", anno.arg, anno.count, anno.length)
+		// print info to stdout
+		fmt.Printf("%v\t%d\t%d\t%v\n", anno.arg, anno.count, anno.length, anno.cigar)
+
+		// plot coverage for this gene
+		if proc.Plot == true {
+			covPlot, err := plot.New()
+			if err != nil {
+				panic(err)
+			}
+			covPlot.Title.Text = "coverage plot"
+			covPlot.X.Label.Text = "position"
+			covPlot.Y.Label.Text = "coverage"
+			err = plotutil.AddLinePoints(covPlot, anno.arg, anno.coverage)
+			if err != nil {
+				panic(err)
+			}
+			fileName := fmt.Sprintf("./groot-plots/coverage-for-%v.png", anno.arg)
+			if err := covPlot.Save(8*vg.Inch, 8*vg.Inch, fileName); err != nil {
+				panic(err)
+			}
+		}
 	}
+}
+
+
+/*
+  This function cleans up the cigar string
+*/
+func cigarClean(str []string) string {
+	counter := 1
+	preVal := str[0]
+	cigar := ""
+	for i, val := range str {
+		if i == 0 {
+			continue
+		}
+		if i == len(str)-1 {
+				if val == preVal {
+					counter++
+					cigar += strconv.Itoa(counter) + val
+				} else {
+					cigar += strconv.Itoa(counter) + preVal + "1" + val
+				}
+				break
+		}
+		if val == preVal {
+			counter++
+		} else {
+			cigar += strconv.Itoa(counter) + preVal
+			preVal = val
+			counter = 1
+		}
+	}
+	return cigar
 }
