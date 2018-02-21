@@ -6,8 +6,7 @@
   <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
   <a href='http://groot-documentation.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/groot-documentation/badge/?version=latest' alt='Documentation Status' /></a>
   <a href="https://github.com/will-rowe/groot/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License"></a>
-  <a href="https://bioconda.github.io/recipes/groot/README.html"><img src="
-https://anaconda.org/bioconda/groot/badges/version.svg?style=flat" alt="License"></a>
+  <a href="https://bioconda.github.io/recipes/groot/README.html"><img src="https://anaconda.org/bioconda/groot/badges/version.svg" alt="bioconda"></a>
 </div>
 
 ***
@@ -53,7 +52,7 @@ go build ./
 
 ## Quick Start
 
-`GROOT` is called by typing **groot**, followed by the command you wish to run. There are three main commands, **index**, **align** and **report**. This quick start will show you how to get things running but it is recommended to follow the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest).
+`GROOT` is called by typing **groot**, followed by the command you wish to run. There are three main commands: **index**, **align** and **report**. This quick start will show you how to get things running but it is recommended to follow the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest).
 
 ```
 # get a pre-clustered ARG database
