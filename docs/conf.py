@@ -82,7 +82,7 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 def setup(app):
     app.add_stylesheet("my-styles.css") # also can be a full URL
 
-html_logo = "_static/groot-logo.png"
+html_logo = "groot-logo.png"
 html_theme_options = {
     # Navigation bar title. (Default: ``project`` value)
     'navbar_title': "GROOT",
@@ -164,7 +164,6 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-templates_path = ['_templates']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
