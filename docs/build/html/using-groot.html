@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Using GROOT &#8212; GROOT 0.2 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/my-styles.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorial" href="tutorial.html" />
+    <link rel="prev" title="Welcome to GROOT’s wiki!" href="index.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html"><span><img src="_static/groot-logo.png"></span>
+          GROOT</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.2</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="https://github.com/will-rowe/groot">GitHub</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Docs <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using GROOT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#an-example">An example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#groot-subcommands">GROOT subcommands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tips">Tips</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Using GROOT</a><ul>
+<li><a class="reference internal" href="#an-example">An example</a></li>
+<li><a class="reference internal" href="#groot-subcommands">GROOT subcommands</a><ul>
+<li><a class="reference internal" href="#get">get</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tips">Tips</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="index.html" title="Previous Chapter: Welcome to GROOT’s wiki!"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; Welcome to GR...</span>
+    </a>
+  </li>
+  <li>
+    <a href="tutorial.html" title="Next Chapter: Tutorial"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">Tutorial &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/using-groot.md.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><ul>
+<li><a class="reference internal" href="#">Using GROOT</a><ul>
+<li><a class="reference internal" href="#an-example">An example</a></li>
+<li><a class="reference internal" href="#groot-subcommands">GROOT subcommands</a><ul>
+<li><a class="reference internal" href="#get">get</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tips">Tips</a></li>
+</ul>
+</li>
+</ul>
+
+  <li>
+    <a href="index.html" title="Previous Chapter: Welcome to GROOT’s wiki!"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; Welcome to GR...</span>
+    </a>
+  </li>
+  <li>
+    <a href="tutorial.html" title="Next Chapter: Tutorial"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">Tutorial &raquo;</span>
+    </a>
+  </li>
+<div id="sourcelink">
+  <a href="_sources/using-groot.md.txt"
+     rel="nofollow">Source</a>
+</div>
+<form action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+        </div>
+      </div>
+    <div class="col-md-9 content">
+      
+  <div class="section" id="using-groot">
+<span id="using-groot"></span><h1>Using GROOT<a class="headerlink" href="#using-groot" title="Permalink to this headline">¶</a></h1>
+<p>GROOT uses a subcommand syntax; call the main program with <code class="docutils literal notranslate"><span class="pre">groot</span></code> and follow it by the subcommand to indicate what  action to take.</p>
+<p>This page will cover a worked example, details on the available GROOT commands and some tips for using the program.</p>
+<hr class="docutils" />
+<div class="section" id="an-example">
+<span id="an-example"></span><h2>An example<a class="headerlink" href="#an-example" title="Permalink to this headline">¶</a></h2>
+<p>This example will take us from raw reads to resistome profile. We will use some metagenome data from a recent paper by <a class="reference external" href="https://doi.org/10.1186/s40168-017-0338-7">Winglee et al.</a>, where they identify differences in the microbiota in rural versus recently urban subjects from the Hunan province of China (see the tutorial for a more complete example using this dataset).</p>
+<p>Get some sequence data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fastq</span><span class="o">-</span><span class="n">dump</span> <span class="n">SRR4454621</span> <span class="n">SRR4454610</span>
+</pre></div>
+</div>
+<p>Get a pre-clustered ARG database:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">groot</span> <span class="n">get</span> <span class="o">-</span><span class="n">d</span> <span class="n">arg</span><span class="o">-</span><span class="n">annot</span>
+</pre></div>
+</div>
+<p>Create variation graphs from the ARG-database and index:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">groot</span> <span class="n">index</span> <span class="o">-</span><span class="n">i</span> <span class="n">arg</span><span class="o">-</span><span class="n">annot</span><span class="o">.</span><span class="mi">90</span> <span class="o">-</span><span class="n">o</span> <span class="n">groot</span><span class="o">-</span><span class="n">index</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8</span> <span class="o">-</span><span class="n">l</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<p>Align the reads and report ARGs</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">groot</span> <span class="n">align</span> <span class="o">-</span><span class="n">i</span> <span class="n">groot</span><span class="o">-</span><span class="n">index</span> <span class="o">-</span><span class="n">f</span> <span class="n">SRR4454621</span><span class="o">.</span><span class="n">fastq</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8</span> <span class="o">|</span> <span class="n">groot</span> <span class="n">report</span> <span class="o">&gt;</span> <span class="n">resistome</span><span class="o">-</span><span class="n">profile</span><span class="o">-</span><span class="n">rural</span><span class="o">.</span><span class="n">txt</span>
+
+<span class="n">groot</span> <span class="n">align</span> <span class="o">-</span><span class="n">i</span> <span class="n">groot</span><span class="o">-</span><span class="n">index</span> <span class="o">-</span><span class="n">f</span> <span class="n">SRR4454610</span><span class="o">.</span><span class="n">fastq</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8</span> <span class="o">|</span> <span class="n">groot</span> <span class="n">report</span> <span class="o">&gt;</span> <span class="n">resistome</span><span class="o">-</span><span class="n">profile</span><span class="o">-</span><span class="n">urban</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="groot-subcommands">
+<span id="groot-subcommands"></span><h2>GROOT subcommands<a class="headerlink" href="#groot-subcommands" title="Permalink to this headline">¶</a></h2>
+<p>Here are some details on the subcommands….</p>
+<div class="section" id="get">
+<span id="get"></span><h3>get<a class="headerlink" href="#get" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">get</span></code> subcommand is used to download a pre-clustered ARG database that is ready to be indexed. Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">groot</span> <span class="n">get</span> <span class="o">-</span><span class="n">d</span> <span class="n">resfinder</span> <span class="o">-</span><span class="n">i</span> <span class="mi">90</span> <span class="o">-</span><span class="n">o</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>The above command will get the <a class="reference external" href="https://cge.cbs.dtu.dk/services/ResFinder/">ResFinder</a> database, which has been clustered at 90% identity, and save it to the current directory. The database will be named <code class="docutils literal notranslate"><span class="pre">resfinder.90</span></code> and contain several <code class="docutils literal notranslate"><span class="pre">*.msa</span></code> files.</p>
+<p>Flags explained:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">-d</span></code>: which database to get</li>
+<li><code class="docutils literal notranslate"><span class="pre">-i</span></code>: the identity threshold at which the database was clustered (note: only 90 currently available)</li>
+<li><code class="docutils literal notranslate"><span class="pre">-o</span></code>: directory to save the database to</li>
+</ul>
+<p>The following databases are available:</p>
+<ul class="simple">
+<li>arg-annot (default)</li>
+<li>resfinder</li>
+<li>card</li>
+</ul>
+<p>These databases were clustered by sequence identity and stored as <strong>Multiple Sequence Alignments</strong> (MSAs). They were clustered using the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">vsearch</span> <span class="o">--</span><span class="n">cluster_size</span> <span class="n">ARGs</span><span class="o">.</span><span class="n">fna</span> <span class="o">--</span><span class="nb">id</span> <span class="mf">0.90</span> <span class="o">--</span><span class="n">msaout</span> <span class="n">MSA</span><span class="o">.</span><span class="n">tmp</span>
+
+<span class="n">awk</span> <span class="s1">&#39;!a[$0]++ {of=&quot;./cluster-&quot; ++fc &quot;.msa&quot;; print $0 &gt;&gt; of ; close(of)}&#39;</span> <span class="n">RS</span><span class="o">=</span> <span class="n">ORS</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span> <span class="n">MSA</span><span class="o">.</span><span class="n">tmp</span> <span class="o">&amp;&amp;</span> <span class="n">rm</span> <span class="n">MSA</span><span class="o">.</span><span class="n">tmp</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">get</span></code> subcommand performs the following steps:</p>
+<ul class="simple">
+<li>downloads a tarball containing the MSAs generated from the specified database (clustered using the specified identity)</li>
+<li>checks checks the file integrity</li>
+<li>unpacks the files into the specified directory</li>
+</ul>
+<p>###&nbsp;index</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">index</span></code> subcommand is used to create variation graphs from a pre-clustered ARG database and then index them. Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">groot</span> <span class="n">index</span> <span class="o">-</span><span class="n">i</span> <span class="n">arg</span><span class="o">-</span><span class="n">annot</span><span class="o">.</span><span class="mi">90</span> <span class="o">-</span><span class="n">o</span> <span class="n">groot</span><span class="o">-</span><span class="n">index</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8</span> <span class="o">-</span><span class="n">l</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<p>The above command will create a variation graph for each cluster in the <code class="docutils literal notranslate"><span class="pre">arg-annot.90</span></code> database and initialise an LSH forest index. It will then move through each graph traversal using a 100 node window, creating a MinHash signature for each window. Finally, each signature is added to the LSH Forest index. The index will be named <code class="docutils literal notranslate"><span class="pre">groot-index</span></code> and contain several files.</p>
+<p>Flags explained:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">-i</span></code>: which database to use</li>
+<li><code class="docutils literal notranslate"><span class="pre">-o</span></code>: where to save the index</li>
+<li><code class="docutils literal notranslate"><span class="pre">-p</span></code>: how many processors to use</li>
+<li><code class="docutils literal notranslate"><span class="pre">-l</span></code>: length of window to use (should be similar to the length of query reads)</li>
+</ul>
+<p>The same index can be used on multiple samples, however, it should be re-indexed if you are using different read lengths or wish to change the seeding parameters.</p>
+<p>Some more flags that can be used:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">-j</span></code>: Jaccard similarity threshold for seeding a read (used to calibrate LSH Forest index)</li>
+<li><code class="docutils literal notranslate"><span class="pre">-k</span></code>: size of k-mer to use for MinHashing</li>
+<li><code class="docutils literal notranslate"><span class="pre">-s</span></code>: length of MinHash signature</li>
+<li><code class="docutils literal notranslate"><span class="pre">-w</span></code>: offset to use when moving window along graph traversals (i.e. distance between MinHash signatures)</li>
+</ul>
+<p>###&nbsp;align</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">align</span></code> subcommand is used to align reads against the indexed variation graphs. Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">groot</span> <span class="n">align</span> <span class="o">-</span><span class="n">i</span> <span class="n">groot</span><span class="o">-</span><span class="n">index</span> <span class="o">-</span><span class="n">f</span> <span class="n">file</span><span class="o">.</span><span class="n">fastq</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8</span> <span class="o">&gt;</span> <span class="n">ARG</span><span class="o">-</span><span class="n">reads</span><span class="o">.</span><span class="n">bam</span>
+</pre></div>
+</div>
+<p>The above command will seed the fastq reads against the indexed variation graph. It will then perform a hierarchical local alignment of each seed against the variation graph traversals. The output alignment is essentially the ARG classified reads (which may be useful) and can then be used to report full-length ARGs (using the report subcommand).</p>
+<p>Flags explained:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">-i</span></code>: which index to use</li>
+<li><code class="docutils literal notranslate"><span class="pre">-f</span></code>: what FASTQ reads to align</li>
+<li><code class="docutils literal notranslate"><span class="pre">-p</span></code>: how many processors to use</li>
+</ul>
+<p>Data can streamed in and out of the align subcommand. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gunzip</span> <span class="o">-</span><span class="n">c</span> <span class="n">file</span><span class="o">.</span><span class="n">gz</span> <span class="o">|</span> <span class="o">./</span><span class="n">groot</span> <span class="n">align</span> <span class="o">-</span><span class="n">i</span> <span class="n">groot</span><span class="o">-</span><span class="n">index</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8</span> <span class="o">|</span> <span class="o">./</span><span class="n">groot</span> <span class="n">report</span>
+</pre></div>
+</div>
+<blockquote>
+<div>this feature is being worked on and will bring more utility in future releases.</div></blockquote>
+<p>Multiple FASTQ files can be specified as input, however all are treated as the same sample and paired-end info isn’t used. To specify multiple files, make sure they are comma separated (<code class="docutils literal notranslate"><span class="pre">-i</span> <span class="pre">fileA.fq,fileB.fq</span></code>).</p>
+<p>Some more flags that can be used:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">--trim</span></code>: enable quality based trimming of read prior to alignment</li>
+<li><code class="docutils literal notranslate"><span class="pre">-q</span></code>: minimum base quality during trimming</li>
+<li><code class="docutils literal notranslate"><span class="pre">-l</span></code>: minimum read length post trimming</li>
+<li><code class="docutils literal notranslate"><span class="pre">-c</span></code>: maximum number of bases to clip from 3’ end during local alignment</li>
+</ul>
+<p>###&nbsp;report</p>
+<p>Will update soon…</p>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="tips">
+<span id="tips"></span><h2>Tips<a class="headerlink" href="#tips" title="Permalink to this headline">¶</a></h2>
+<p>Will update soon…</p>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2018, Will Rowe.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
