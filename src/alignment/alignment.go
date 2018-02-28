@@ -1,7 +1,6 @@
 package alignment
 
 import (
-	"errors"
 	"fmt"
 	"github.com/biogo/hts/sam"
 	"github.com/will-rowe/groot/src/graph"
@@ -19,7 +18,7 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 	// get the node location in the sorted graph using the lookup map
 	nodeLookup, ok := graph.NodeLookUp[seedNodeID]
 	if !ok {
-		misc.ErrorCheck(errors.New(fmt.Sprintf("could not perform node lookup during alignment - possible incorrect seed")))
+		misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
 	}
 	// create the return channel
 	returnAlignments := make(chan *sam.Record)
@@ -69,7 +68,7 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 		initClip := 0
 		clippedSeq2 := []byte{}
 		if len(IDs) == 0 {
-			if len(graph.SortedNodes[nodeLookup].InEdges) == 0  {
+			if len(graph.SortedNodes[nodeLookup].InEdges) == 0 {
 				clippedSeq2 = read.Seq
 				for i := 0; i > len(read.Seq); i++ {
 					clippedSeq2 = clippedSeq2[i:]
@@ -178,7 +177,7 @@ func DFSrecursive(node *graph.Node, graph *graph.Graph, read *[]byte, distance i
 		// get the node from the sorted graph using the lookup
 		nodeLookup, ok := graph.NodeLookUp[neighbourNode]
 		if !ok {
-			misc.ErrorCheck(errors.New(fmt.Sprintf("could not perform node lookup during alignment - possible incorrect seed")))
+			misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
 		}
 		// call the DFS func again
 		if result := DFSrecursive(&graph.SortedNodes[nodeLookup], graph, read, distance, path, sendPath, readLength); result == true {
@@ -192,7 +191,7 @@ func DFSrecursive(node *graph.Node, graph *graph.Graph, read *[]byte, distance i
   A function to report a graph traversal relative to a linear reference sequence
 */
 // it receives a path(s) (the nodes which were traversed during a successful alignment) and evaluates the parent sequences for each node
-// it returns the ID of the most frequently occuring parent sequence, plus the start position of the alignment, relative to the linear reference sequence of the parent(s)
+// it returns the ID of the most frequently occurring parent sequence, plus the start position of the alignment, relative to the linear reference sequence of the parent(s)
 func processTraversal(graph *graph.Graph, paths [][]int) ([]int, map[int]int) {
 	IDassignments := []int{}
 	startPositions := make(map[int]int)
@@ -207,7 +206,7 @@ func processTraversal(graph *graph.Graph, paths [][]int) ([]int, map[int]int) {
 			// lookup the position of the nodeID in the graph and get the full node info
 			nodeLookup, ok := graph.NodeLookUp[paths[pathIterator][i]]
 			if !ok {
-				misc.ErrorCheck(errors.New(fmt.Sprintf("could not perform node lookup during alignment - possible incorrect seed")))
+				misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
 			}
 			node := graph.SortedNodes[nodeLookup]
 			// tally the parent IDs of this node

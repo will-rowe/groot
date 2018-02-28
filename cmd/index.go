@@ -177,7 +177,7 @@ func runIndex() {
 		}
 		// check the MSA was parsed
 		if len(args) == 0 {
-			misc.ErrorCheck(errors.New(fmt.Sprintf("could not parse \"%v\"", msa)))
+			misc.ErrorCheck(fmt.Errorf("could not parse \"%v\"", msa))
 		}
 		// check the MSA entries passed
 		if discard == true {
@@ -205,7 +205,7 @@ func runIndex() {
 		graphStore[i-skippedMSAs] = graph
 	} // finished parsing MSAs
 	if len(graphStore) == 0 {
-		misc.ErrorCheck(errors.New(fmt.Sprintf("could not create any graphs")))
+		misc.ErrorCheck(fmt.Errorf("could not create any graphs"))
 	}
 	log.Printf("\tnumber of graph built: %d", len(graphStore))
 	log.Printf("windowing graphs and generating MinHash signatures...")

@@ -77,7 +77,7 @@ func (self *Sequence) BaseCheck() error {
 		case '-':
 			continue
 		default:
-			return errors.New(fmt.Sprintf("non \"A\\C\\T\\G\\N\\-\" base (%v)", string(self.Seq[i])))
+			return fmt.Errorf("non \"A\\C\\T\\G\\N\\-\" base (%v)", string(self.Seq[i]))
 		}
 	}
 	return nil

@@ -10,7 +10,6 @@
 package alignment
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -39,21 +38,21 @@ var (
 func setupGraph(seq1, seq2 []byte) (graph.Graph, []*sam.Reference, error) {
 	testGraph, err := graph.NewGraph(seq1)
 	if err != nil {
-		return graph.Graph{}, nil, errors.New(fmt.Sprintf("could not create the graph: %v\n", err))
+		return graph.Graph{}, nil, fmt.Errorf("could not create the graph: %v\n", err)
 	}
 	if err = testGraph.AddVariantNodes(seq2, 1); err != nil {
-		return graph.Graph{}, nil, errors.New(fmt.Sprintf("could not add variants the graph: %v\n", err))
+		return graph.Graph{}, nil, fmt.Errorf("could not add variants the graph: %v\n", err)
 	}
 	if err := testGraph.TopSort(); err != nil {
-		return graph.Graph{}, nil, errors.New(fmt.Sprintf("could not run topological sort: %v\n", err))
+		return graph.Graph{}, nil, fmt.Errorf("could not run topological sort: %v\n", err)
 	}
 	ref1, err := sam.NewReference("reference_A", "", "", len(seq1), nil, nil)
 	if err != nil {
-		return graph.Graph{}, nil, errors.New(fmt.Sprintf("could not create SAM references: %v\n", err))
+		return graph.Graph{}, nil, fmt.Errorf("could not create SAM references: %v\n", err)
 	}
 	ref2, err := sam.NewReference("reference_B", "", "", len(seq2), nil, nil)
 	if err != nil {
-		return graph.Graph{}, nil, errors.New(fmt.Sprintf("could not create SAM references: %v\n", err))
+		return graph.Graph{}, nil, fmt.Errorf("could not create SAM references: %v\n", err)
 	}
 	testRefs := []*sam.Reference{ref1, ref2}
 	return *testGraph, testRefs, nil
@@ -62,11 +61,11 @@ func setupGraph(seq1, seq2 []byte) (graph.Graph, []*sam.Reference, error) {
 func setupRead(la, lb, lc, ld []byte, node int) (seqio.FASTQread, error) {
 	testRead, err := seqio.NewFASTQread(la, lb, lc, ld)
 	if err != nil {
-		return seqio.FASTQread{}, errors.New(fmt.Sprintf("could not generate FASTQ read: %v\n", err))
+		return seqio.FASTQread{}, fmt.Errorf("could not generate FASTQ read: %v\n", err)
 	}
 	err = testRead.BaseCheck()
 	if err != nil {
-		return seqio.FASTQread{}, errors.New(fmt.Sprintf("could not generate FASTQ read: %v\n", err))
+		return seqio.FASTQread{}, fmt.Errorf("could not generate FASTQ read: %v\n", err)
 	}
 	// this seed is for graph ID 0 (not needed here), node 0 (the first node in the reference graph), 100% JS and not reverse complemented
 	seed := seqio.Key{0, node, false}

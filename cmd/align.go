@@ -77,19 +77,19 @@ func alignParamCheck() error {
 	if len(*fastq) == 0 {
 		stat, err := os.Stdin.Stat()
 		if err != nil {
-			return errors.New(fmt.Sprintf("error with STDIN"))
+			return fmt.Errorf("error with STDIN")
 		}
 		if (stat.Mode() & os.ModeNamedPipe) == 0 {
-			return errors.New(fmt.Sprintf("no STDIN found"))
+			return fmt.Errorf("no STDIN found")
 		}
 		log.Printf("\tinput file: using STDIN")
 	} else {
 		for _, fastqFile := range *fastq {
 			if _, err := os.Stat(fastqFile); err != nil {
 				if os.IsNotExist(err) {
-					return errors.New(fmt.Sprintf("FASTQ file does not exist: %v", fastqFile))
+					return fmt.Errorf("FASTQ file does not exist: %v", fastqFile)
 				} else {
-					return errors.New(fmt.Sprintf("can't access FASTQ file (check permissions): %v", fastqFile))
+					return fmt.Errorf("can't access FASTQ file (check permissions): %v", fastqFile)
 				}
 			}
 			splitFilename := strings.Split(fastqFile, ".")
@@ -102,7 +102,7 @@ func alignParamCheck() error {
 					continue
 				}
 			}
-			return errors.New(fmt.Sprintf("does not look like a FASTQ file: %v", fastqFile))
+			return fmt.Errorf("does not look like a FASTQ file: %v", fastqFile)
 		}
 	}
 	// check the index directory and files
@@ -111,18 +111,18 @@ func alignParamCheck() error {
 	}
 	if _, err := os.Stat(*indexDir); err != nil {
 		if os.IsNotExist(err) {
-			return errors.New(fmt.Sprintf("index directory does not exist: %v", *indexDir))
+			return fmt.Errorf("index directory does not exist: %v", *indexDir)
 		} else {
-			return errors.New(fmt.Sprintf("can't access an index directory (check permissions): %v", indexDir))
+			return fmt.Errorf("can't access an index directory (check permissions): %v", indexDir)
 		}
 	}
 	indexFiles := [3]string{"/index.graph", "/index.info", "/index.sigs"}
 	for _, indexFile := range indexFiles {
 		if _, err := os.Stat(*indexDir + indexFile); err != nil {
 			if os.IsNotExist(err) {
-				return errors.New(fmt.Sprintf("index file does not exist: %v", indexFile))
+				return fmt.Errorf("index file does not exist: %v", indexFile)
 			} else {
-				return errors.New(fmt.Sprintf("can't access an index file (check permissions): %v", indexFile))
+				return fmt.Errorf("can't access an index file (check permissions): %v", indexFile)
 			}
 		}
 	}

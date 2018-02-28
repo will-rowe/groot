@@ -3,7 +3,6 @@ package lshForest
 import (
 	"encoding/binary"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"github.com/will-rowe/groot/src/seqio"
 	"math"
@@ -150,7 +149,7 @@ func (self *LSHforest) Index() {
 */
 func (self *LSHforest) Dump(path string) error {
 	if len(self.hashTables[0]) != 0 {
-		return errors.New(fmt.Sprintf("cannot dump the LSH Forest after running the indexing method"))
+		return fmt.Errorf("cannot dump the LSH Forest after running the indexing method")
 	}
 	file, err := os.Create(path)
 	if err != nil {
@@ -230,7 +229,7 @@ func (self *LSHforest) runQuery(sig []uint64, done <-chan struct{}) <-chan strin
 				// k is the index returned by the search
 				if index < len(band) && band[index].HashedSignature[:prefixSize] == queryChunk {
 					for j := index; j < len(band) && band[j].HashedSignature[:prefixSize] == queryChunk; j++ {
-    					// copies key values from this hashtable to the keyChan until all values from band[j] copied or done is closed
+						// copies key values from this hashtable to the keyChan until all values from band[j] copied or done is closed
 						for _, key := range band[j].graphKeys {
 							select {
 							case keyChan <- key:

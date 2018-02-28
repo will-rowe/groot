@@ -5,8 +5,8 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
 	"strconv"
+	"sync"
 
 	"github.com/biogo/hts/bam"
 	"github.com/biogo/hts/bgzf"
@@ -23,14 +23,14 @@ type annotation struct {
 	count    int
 	length   int
 	coverage plotter.XYs
-	cigar string
+	cigar    string
 }
 
 type BAMreader struct {
 	InputFile      string
-	Plot	bool
+	Plot           bool
 	CoverageCutoff float64
-	LowCov bool
+	LowCov         bool
 }
 
 func NewBAMreader() *BAMreader {
@@ -151,11 +151,11 @@ func (proc *BAMreader) Run() {
 					}
 					// create the annotation
 					anno := annotation{
-						arg:    refName,
-						count:  len(records),
-						length: ref.Len(),
+						arg:      refName,
+						count:    len(records),
+						length:   ref.Len(),
 						coverage: coverage,
-						cigar: cleanCigar,
+						cigar:    cleanCigar,
 					}
 					// send annotation on
 					sendChan <- anno
@@ -194,7 +194,6 @@ func (proc *BAMreader) Run() {
 	}
 }
 
-
 /*
   This function cleans up the cigar string
 */
@@ -208,15 +207,15 @@ func cigarClean(str []string) (string, bool) {
 			continue
 		}
 		if i == len(str)-1 {
-				if val == preVal {
-					counter++
-					cigar += strconv.Itoa(counter) + val
-					DMrecord[val]++
-				} else {
-					cigar += strconv.Itoa(counter) + preVal + "1" + val
-					DMrecord[val]++
-				}
-				break
+			if val == preVal {
+				counter++
+				cigar += strconv.Itoa(counter) + val
+				DMrecord[val]++
+			} else {
+				cigar += strconv.Itoa(counter) + preVal + "1" + val
+				DMrecord[val]++
+			}
+			break
 		}
 		if val == preVal {
 			counter++

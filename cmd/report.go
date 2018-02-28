@@ -36,15 +36,15 @@ import (
 var (
 	bamFile   *string  // a BAM file to generate report from
 	covCutoff *float64 // breadth of coverage theshold
-	plotCov *bool // keeps the coverage plots for each annotated gene
-	lowCov *bool // reports ARGs which don't have 5' or 3' coverage
+	plotCov   *bool    // keeps the coverage plots for each annotated gene
+	lowCov    *bool    // reports ARGs which don't have 5' or 3' coverage
 )
 
 // the report command (used by cobra)
 var reportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "Generate a report from the output of groot align",
-	Long:  `Generate a report from the output of groot align.
+	Long: `Generate a report from the output of groot align.
 
 	This will report gene, read count, gene length, coverage cigar to STDOUT as tab separated values.
 
@@ -75,29 +75,29 @@ func reportParamCheck() error {
 	if *bamFile == "" {
 		stat, err := os.Stdin.Stat()
 		if err != nil {
-			return errors.New(fmt.Sprintf("error with STDIN"))
+			return fmt.Errorf("error with STDIN")
 		}
 		if (stat.Mode() & os.ModeNamedPipe) == 0 {
-			return errors.New(fmt.Sprintf("no STDIN found"))
+			return fmt.Errorf("no STDIN found")
 		}
 		log.Printf("\tBAM file: using STDIN")
 		// check the provided BAM files
 	} else {
 		if _, err := os.Stat(*bamFile); err != nil {
 			if os.IsNotExist(err) {
-				return errors.New(fmt.Sprintf("BAM file does not exist: %v", *bamFile))
+				return fmt.Errorf("BAM file does not exist: %v", *bamFile)
 			} else {
-				return errors.New(fmt.Sprintf("can't access BAM file (check permissions): %v", *bamFile))
+				return fmt.Errorf("can't access BAM file (check permissions): %v", *bamFile)
 			}
 		}
 		splitFilename := strings.Split(*bamFile, ".")
 		if splitFilename[len(splitFilename)-1] != "bam" {
-			return errors.New(fmt.Sprintf("the BAM file does not have a `.bam` extension: %v", *bamFile))
+			return fmt.Errorf("the BAM file does not have a `.bam` extension: %v", *bamFile)
 		}
 		log.Printf("\tBAM file: %v", *bamFile)
 	}
 	if *covCutoff > 1.0 {
-		return errors.New(fmt.Sprintf("supplied coverage cutoff exceeds 1.0 (100%): %v", *covCutoff))
+		return fmt.Errorf("supplied coverage cutoff exceeds 1.0 (100%): %v", *covCutoff)
 	}
 	// set number of processors to use
 	if *proc <= 0 || *proc > runtime.NumCPU() {

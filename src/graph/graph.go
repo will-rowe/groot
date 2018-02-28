@@ -34,7 +34,7 @@ type Graph struct {
 func (self *Graph) countNodes() {
 	self.NodeTotal = 0
 	for _, nodes := range self.NodeHolder {
-		for _, _ = range nodes {
+		for range nodes {
 			self.NodeTotal++
 		}
 	}
@@ -114,7 +114,7 @@ func (self *Graph) Prune() error {
 	}
 	// iterate over the node holder again, tidy up all references to removed nodes and remove duplicate edges
 	for slot := 0; slot < len(self.NodeHolder); slot++ {
-		for nodeLocator, _ := range self.NodeHolder[slot] {
+		for nodeLocator := range self.NodeHolder[slot] {
 			// update in edges + remove duplicates
 			inDups := make(map[int]struct{})
 			updatedInEdges := []int{}

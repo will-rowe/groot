@@ -21,25 +21,25 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
-	"os"
-	"io"
-    "net/http"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/mholt/archiver"
+	"github.com/spf13/cobra"
 )
 
 // available databases to download
-var	availDb = []string{"arg-annot", "resfinder", "card"}
-var	availIdent = []string{"90"}
+var availDb = []string{"arg-annot", "resfinder", "card"}
+var availIdent = []string{"90"}
 var md5sums = map[string]string{
 	"arg-annot.90": "d5398b7bd40d7e872c3e4a689cee4726",
 	"resfinder.90": "de34ab790693cb7c7b656d537ec40f05",
-	"card.90": "3e8a7b56fb7ce1c857299decac2d71c2",
+	"card.90":      "3e8a7b56fb7ce1c857299decac2d71c2",
 }
 
 // url to download databases from
@@ -49,14 +49,14 @@ var dbUrl = "https://github.com/will-rowe/groot/raw/master/db/clustered-ARG-data
 var (
 	database *string // the database to download
 	identity *string // the sequence identity used to cluster the database
-	dbDir *string // the location to store the database
+	dbDir    *string // the location to store the database
 )
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Download a pre-clustered ARG database",
-	Long: `Download a pre-clustered ARG database`,
+	Long:  `Download a pre-clustered ARG database`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runGet()
 	},
@@ -65,7 +65,7 @@ var getCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(getCmd)
 	database = getCmd.Flags().StringP("database", "d", "arg-annot", "database to download (please choose: arg-annot/resfinder/card)")
-	identity =getCmd.Flags().StringP("identity", "i", "90", "the sequence identity used to cluster the database (only 90 available atm)")
+	identity = getCmd.Flags().StringP("identity", "i", "90", "the sequence identity used to cluster the database (only 90 available atm)")
 	dbDir = getCmd.PersistentFlags().StringP("out", "o", ".", "directory to save the database to")
 }
 
@@ -81,7 +81,7 @@ func getParamCheck() error {
 		}
 	}
 	if checkPass == false {
-		return errors.New(fmt.Sprintf("unrecognised DB: %v\n\nplease choose either: arg-annot, resfinder or card", *database))
+		return fmt.Errorf("unrecognised DB: %v\n\nplease choose either: arg-annot, resfinder or card", *database)
 	}
 	checkPass = false
 	for _, avail := range availIdent {
@@ -90,37 +90,36 @@ func getParamCheck() error {
 		}
 	}
 	if checkPass == false {
-		return errors.New(fmt.Sprintf("identity value not available: %v\n\nplease choose either: 90, ", *identity))
+		return fmt.Errorf("identity value not available: %v\n\nplease choose either: 90, ", *identity)
 	}
 	// setup the dbDir
 	if _, err := os.Stat(*dbDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(*dbDir, 0700); err != nil {
-			return errors.New(fmt.Sprintf("directory creation failed: %v\n\ncan't create specified output directory for the database", *dbDir))
+			return fmt.Errorf("directory creation failed: %v\n\ncan't create specified output directory for the database", *dbDir)
 		}
 	}
 	return nil
 }
 
-
 /*
   A function to download the database tarball
 */
 func DownloadFile(savePath string, url string) error {
-    outFile, err := os.Create(savePath)
-    if err != nil {
-        return err
-    }
-    defer outFile.Close()
-    response, err := http.Get(url)
-    if err != nil {
-        return err
-    }
-    defer response.Body.Close()
-    _, err = io.Copy(outFile, response.Body)
-    if err != nil {
-        return err
-    }
-    return nil
+	outFile, err := os.Create(savePath)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+	response, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	_, err = io.Copy(outFile, response.Body)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 /*

@@ -20,16 +20,16 @@ var (
 
 // expected edges for the sort graph from test function 2
 var testInEdges = [][]int{
-	[]int{},
-	[]int{0},
-	[]int{0},
-	[]int{1, 4},
+	{},
+	{0},
+	{0},
+	{1, 4},
 }
 var testOutEdges = [][]int{
-	[]int{4, 1},
-	[]int{2},
-	[]int{2},
-	[]int{},
+	{4, 1},
+	{2},
+	{2},
+	{},
 }
 
 // the order of nodes expected in the sorted graph from test function 3

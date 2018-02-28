@@ -191,7 +191,7 @@ func (proc *MsaChecker) Run() {
 		}
 		// check for duplicate headers
 		if _, ok := duplicateHeaders[string(reference.ID)]; ok {
-			misc.ErrorCheck(errors.New(fmt.Sprintf("duplicate header in MSA file: %v\n", string(reference.ID))))
+			misc.ErrorCheck(fmt.Errorf("duplicate header in MSA file: %v\n", string(reference.ID)))
 		} else {
 			duplicateHeaders[string(reference.ID)] = struct{}{}
 		}
@@ -301,7 +301,7 @@ func (proc *FastqChecker) Run() {
 	log.Printf("\tmean read length: %.0f\n", meanRL)
 	// check the length is within +/-10 bases of the graph window
 	if meanRL < float64(proc.WindowSize-10) || meanRL > float64(proc.WindowSize+10) {
-		misc.ErrorCheck(errors.New(fmt.Sprintf("mean read length is outside the graph window size (+/- 10 bases)\n")))
+		misc.ErrorCheck(fmt.Errorf("mean read length is outside the graph window size (+/- 10 bases)\n"))
 	}
 }
 
@@ -369,12 +369,12 @@ func (proc *DbQuerier) Run() {
 
 	// log some stuff
 	if readTally == 0 {
-		misc.ErrorCheck(errors.New(fmt.Sprintf("no reads passed quality-based trimming")))
+		misc.ErrorCheck(fmt.Errorf("no reads passed quality-based trimming"))
 	} else {
 		log.Printf("\tnumber of reads received for alignment post QC: %d\n", readTally)
 	}
 	if seededTally == 0 {
-		misc.ErrorCheck(errors.New(fmt.Sprintf("no reads could be seeded against the reference graphs")))
+		misc.ErrorCheck(fmt.Errorf("no reads could be seeded against the reference graphs"))
 	} else {
 		log.Printf("\tnumber of reads seeded: %d\n", seededTally)
 	}
