@@ -414,7 +414,7 @@ func (proc *Aligner) Run() {
 		go func(read seqio.FASTQread) {
 			defer wg.Done()
 			readAlignmentCount := 0
-			// seededGraphs records each graph seeded and if a local alignment is acheived - it prevents duplicate alignments being reported from closely separated seeds
+			// seededGraphs records each graph seeded and if a local alignment is achieved - it prevents duplicate alignments being reported from closely separated seeds
 			seededGraphs := make(map[int]int)
 			// quality trim the read if requested
 			if proc.MinQual != 0 {

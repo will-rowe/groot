@@ -201,7 +201,7 @@ func TestGraph2Seq(t *testing.T) {
 		t.Fatalf("sequence extracted but incorrect start node returned")
 	}
 	// check the window parameter works
-	testSeq3window, startNode, err := graph.Graph2Seq(2, 3, 3)
+	testSeq3window, _, err := graph.Graph2Seq(2, 3, 3)
 	if err != nil {
 		t.Fatalf("could not extract window of seq3 from the graph: %v\n", err)
 	}

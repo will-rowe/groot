@@ -64,7 +64,7 @@ func Execute() {
 }
 
 /*
-  A function to initalise the command line arguments
+  A function to initialise the command line arguments
 */
 func init() {
 	proc = RootCmd.PersistentFlags().IntP("processors", "p", 1, "number of processors to use")

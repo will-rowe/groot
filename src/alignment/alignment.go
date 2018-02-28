@@ -28,7 +28,7 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 		defer close(returnAlignments)
 		IDs := []int{}
 		startPos := make(map[int]int)
-		// try exact alignment, if unsuccesful then try shuffling the seed forward
+		// try exact alignment, if unsuccessful then try shuffling the seed forward
 		nodeShift := 0
 		for nodeShift < 5 {
 			IDs, startPos = performAlignment(nodeLookup+nodeShift, &read.Seq, graph)
@@ -37,7 +37,7 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 			}
 			nodeShift++
 		}
-		// try exact alignment, if unsuccesful then try shuffling the seed backward
+		// try exact alignment, if unsuccessful then try shuffling the seed backward
 		if len(IDs) == 0 {
 			nodeShift = 1
 			for nodeShift < 5 {
@@ -51,7 +51,7 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 				nodeShift++
 			}
 		}
-		// if still unsuccesful, try clipping the end of the read
+		// if still unsuccessful, try clipping the end of the read
 		hardClip := 0
 		clippedSeq := read.Seq
 		if len(IDs) == 0 {

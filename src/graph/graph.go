@@ -97,7 +97,7 @@ func (self *Graph) Prune() error {
 			if _, ok := duplicates[string(currentNode.Base)]; !ok {
 				duplicates[string(currentNode.Base)] = nodeLocator
 			} else {
-				// the current node is a duplicate - the previous occurance is now the node we will consolidate the duplicate(s) to
+				// the current node is a duplicate - the previous occurrence is now the node we will consolidate the duplicate(s) to
 				consolidator := duplicates[string(currentNode.Base)]
 				// update the consolidator to contain the current nodes in/out edges + parent identifier
 				self.NodeHolder[slot][consolidator].InEdges = append(self.NodeHolder[slot][consolidator].InEdges, currentNode.InEdges...)

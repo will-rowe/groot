@@ -57,7 +57,7 @@ var alignCmd = &cobra.Command{
 }
 
 /*
-  A function to initalise the command line arguments
+  A function to initialise the command line arguments
 */
 func init() {
 	RootCmd.AddCommand(alignCmd)

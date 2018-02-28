@@ -66,7 +66,7 @@ var indexCmd = &cobra.Command{
 }
 
 /*
-  A function to initalise the command line arguments
+  A function to initialise the command line arguments
 */
 func init() {
 	RootCmd.AddCommand(indexCmd)
@@ -249,7 +249,7 @@ func runIndex() {
 	for i := range sigStore {
 		sigStore[i] = make(map[int][][]uint64)
 	}
-	// recieve the signatures and store
+	// receive the signatures and store
 	var sigCount int = 0
 	for window := range sigChan {
 		sigStore[window.Graph][window.Node] = append(sigStore[window.Graph][window.Node], window.Sig)

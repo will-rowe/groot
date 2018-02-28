@@ -30,6 +30,7 @@ type BAMreader struct {
 	InputFile      string
 	Plot	bool
 	CoverageCutoff float64
+	LowCov bool
 }
 
 func NewBAMreader() *BAMreader {
@@ -144,13 +145,17 @@ func (proc *BAMreader) Run() {
 							cigar = append(cigar, "M")
 						}
 					}
+					cleanCigar, internalD := cigarClean(cigar)
+					if (internalD == true) && (proc.LowCov == true) {
+						return
+					}
 					// create the annotation
 					anno := annotation{
 						arg:    refName,
 						count:  len(records),
 						length: ref.Len(),
 						coverage: coverage,
-						cigar: cigarClean(cigar),
+						cigar: cleanCigar,
 					}
 					// send annotation on
 					sendChan <- anno
@@ -175,8 +180,8 @@ func (proc *BAMreader) Run() {
 				panic(err)
 			}
 			covPlot.Title.Text = "coverage plot"
-			covPlot.X.Label.Text = "position"
-			covPlot.Y.Label.Text = "coverage"
+			covPlot.X.Label.Text = "position in gene"
+			covPlot.Y.Label.Text = "coverage (number of reads at position)"
 			err = plotutil.AddLinePoints(covPlot, anno.arg, anno.coverage)
 			if err != nil {
 				panic(err)
@@ -193,10 +198,11 @@ func (proc *BAMreader) Run() {
 /*
   This function cleans up the cigar string
 */
-func cigarClean(str []string) string {
+func cigarClean(str []string) (string, bool) {
 	counter := 1
 	preVal := str[0]
 	cigar := ""
+	DMrecord := make(map[string]int)
 	for i, val := range str {
 		if i == 0 {
 			continue
@@ -205,18 +211,26 @@ func cigarClean(str []string) string {
 				if val == preVal {
 					counter++
 					cigar += strconv.Itoa(counter) + val
+					DMrecord[val]++
 				} else {
 					cigar += strconv.Itoa(counter) + preVal + "1" + val
+					DMrecord[val]++
 				}
 				break
 		}
 		if val == preVal {
 			counter++
 		} else {
+			DMrecord[preVal]++
 			cigar += strconv.Itoa(counter) + preVal
 			preVal = val
 			counter = 1
 		}
 	}
-	return cigar
+	// use the DM record to see if internal Ds have been found
+	if ((DMrecord["D"] + DMrecord["M"]) <= 2) || ((DMrecord["D"] == 2) && (DMrecord["M"] == 1)) {
+		return cigar, false
+	} else {
+		return cigar, true
+	}
 }
