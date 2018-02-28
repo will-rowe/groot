@@ -44,7 +44,12 @@ var reportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "Generate a report from the output of groot align",
 	Long:  `Generate a report from the output of groot align.
-	Currently only reports: gene, length, read count`,
+
+	This will report gene, read count, gene length, coverage cigar to STDOUT as tab separated values.
+
+	Coverage cigar is present to help debug and indicates if the reference gene is covered (M) or not (D).
+
+	This command also prints a coverage plot for each gene (--plotCov flag)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runReport()
 	},

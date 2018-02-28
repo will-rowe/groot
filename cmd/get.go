@@ -64,7 +64,7 @@ var getCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(getCmd)
-	database = getCmd.Flags().StringP("database", "d", "arg-annot", "database to download (please choose: argannot/resfinder/card)")
+	database = getCmd.Flags().StringP("database", "d", "arg-annot", "database to download (please choose: arg-annot/resfinder/card)")
 	identity =getCmd.Flags().StringP("identity", "i", "90", "the sequence identity used to cluster the database (only 90 available atm)")
 	dbDir = getCmd.PersistentFlags().StringP("out", "o", ".", "directory to save the database to")
 }
@@ -81,7 +81,7 @@ func getParamCheck() error {
 		}
 	}
 	if checkPass == false {
-		return errors.New(fmt.Sprintf("unrecognised DB: %v\n\nplease choose either: argannot, resfinder or card", *database))
+		return errors.New(fmt.Sprintf("unrecognised DB: %v\n\nplease choose either: arg-annot, resfinder or card", *database))
 	}
 	checkPass = false
 	for _, avail := range availIdent {
@@ -186,5 +186,5 @@ func runGet() {
 	}
 	dbSave = fmt.Sprintf("%v/%v.%v", *dbDir, *database, *identity)
 	fmt.Printf("database saved to: %v\n", dbSave)
-	fmt.Printf("now run `groot index`\n")
+	fmt.Printf("now run `groot index -i %v` or `groot index --help` for full options\n", dbSave)
 }

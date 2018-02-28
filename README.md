@@ -2,11 +2,13 @@
   <img src="paper/img/misc/groot-logo.png?raw=true?" alt="groot-logo" width="250">
   <br><br>
   <h1>GROOT</h1>
-  <h3><a style="color:#FF6600">G</a>raphing <a style="color:#FF6600">R</a>esistance genes <a style="color:#FF6600">O</a>ut <a style="color:#FF6600">O</a>f me<a style="color:#FF6600">T</a>agenomes</h3>
+  <h3><a style="color:#FF6600">G</a>raphing <a style="color:#FF6600">R</a>esistance <a style="color:#FF6600">O</a>ut <a style="color:#FF6600">O</a>f me<a style="color:#FF6600">T</a>agenomes</h3>
+  <hr>
   <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
   <a href='http://groot-documentation.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/groot-documentation/badge/?version=latest' alt='Documentation Status' /></a>
   <a href="https://github.com/will-rowe/groot/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License"></a>
   <a href="https://bioconda.github.io/recipes/groot/README.html"><img src="https://anaconda.org/bioconda/groot/badges/version.svg" alt="bioconda"></a>
+  <a href="https://zenodo.org/badge/latestdoi/117543539"><img src="https://zenodo.org/badge/117543539.svg" alt="DOI"></a>
 </div>
 
 ***
@@ -68,6 +70,6 @@ groot align -i groot-index -f reads.fq | groot report
 
 ## Further Information and citing
 
-Please [readthedocs](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more extensive documentation.
+Please [readthedocs](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more extensive documentation and a [tutorial](https://groot-documentation.readthedocs.io/en/latest/tutorial.html).
 
 The paper describing `GROOT` is in preparation and will be pre-printed soon.

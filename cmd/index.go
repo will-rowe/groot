@@ -75,7 +75,7 @@ func init() {
 	readLength = indexCmd.Flags().IntP("readLength", "l", 100, "length of query reads (which will be aligned during the align subcommand)")
 	windowOffset = indexCmd.Flags().IntP("windowOffset", "w", 1, "used to move window through variation graph")
 	jsThresh = indexCmd.Flags().Float64P("jsThresh", "j", 0.99, "minimum Jaccard similarity for a seed to be recorded")
-	msaDir = indexCmd.Flags().StringP("msaDir", "i", "", "directory containing input MSA file(s)")
+	msaDir = indexCmd.Flags().StringP("msaDir", "i", "", "directory containing the clustered references (MSA files)")
 	outDir = indexCmd.PersistentFlags().StringP("outDir", "o", defaultOutDir, "directory to save index files to")
 }
 

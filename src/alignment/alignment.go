@@ -64,6 +64,25 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 				}
 			}
 		}
+		// TODO: need to handle if a read spans the start of a gene + the upstream region
+		// this is a messy fix to try and solve this
+		initClip := 0
+		clippedSeq2 := []byte{}
+		if len(IDs) == 0 {
+			if len(graph.SortedNodes[nodeLookup].InEdges) == 0  {
+				clippedSeq2 = read.Seq
+				for i := 0; i > len(read.Seq); i++ {
+					clippedSeq2 = clippedSeq2[i:]
+					IDs, startPos = performAlignment(nodeLookup, &clippedSeq2, graph)
+					initClip++
+					if len(IDs) != 0 {
+						break
+					}
+				}
+			}
+
+		}
+		// END hierarchical alignment
 		// report any alignments
 		if len(IDs) != 0 {
 			for _, ID := range IDs {
@@ -81,6 +100,9 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 				if hardClip != 0 {
 					cigar = append(cigar, sam.NewCigarOp(sam.CigarMatch, len(clippedSeq)))
 					cigar = append(cigar, sam.NewCigarOp(sam.CigarHardClipped, hardClip))
+				} else if initClip != 0 {
+					cigar = append(cigar, sam.NewCigarOp(sam.CigarHardClipped, initClip))
+					cigar = append(cigar, sam.NewCigarOp(sam.CigarMatch, len(clippedSeq2)))
 				} else {
 					cigar = append(cigar, sam.NewCigarOp(sam.CigarMatch, len(read.Seq)))
 				}
@@ -141,8 +163,8 @@ func DFSrecursive(node *graph.Node, graph *graph.Graph, read *[]byte, distance i
 		return false
 	}
 
-	// if we have a consensus length that equals read length (==exact match) - end the DFS and then copy + report the alignment
-	if distance == readLength {
+	// if we have a consensus length that equals read length (==exact match), or there are no more nodes in the graph - end the DFS and report the alignment
+	if distance == readLength || len(node.OutEdges) == 0 {
 		pathCopy := make([]int, len(path))
 		for i, j := range path {
 			pathCopy[i] = j
