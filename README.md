@@ -58,13 +58,13 @@ go build ./
 `GROOT` is called by typing **groot**, followed by the command you wish to run. There are three main commands: **index**, **align** and **report**. This quick start will show you how to get things running but it is recommended to follow the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest).
 
 ```bash
-# get a pre-clustered ARG database
+# Get a pre-clustered ARG database
 groot get -d arg-annot
 
-# create graphs and index
+# Create graphs and index
 groot index -i arg-annot.90 -o groot-index
 
-# align reads and report
+# Align reads and report
 groot align -i groot-index -f reads.fq | groot report
 ```
 
