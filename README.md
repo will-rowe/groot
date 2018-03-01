@@ -57,7 +57,7 @@ go build ./
 
 `GROOT` is called by typing **groot**, followed by the command you wish to run. There are three main commands: **index**, **align** and **report**. This quick start will show you how to get things running but it is recommended to follow the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest).
 
-```
+```bash
 # get a pre-clustered ARG database
 groot get -d arg-annot
 
@@ -69,8 +69,10 @@ groot align -i groot-index -f reads.fq | groot report
 ```
 
 
-## Further Information and citing
+## Further Information & Citing
 
 Please [readthedocs](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more extensive documentation and a [tutorial](https://groot-documentation.readthedocs.io/en/latest/tutorial.html).
 
-The paper describing `GROOT` is in preparation and will be pre-printed soon.
+We also have a preprint paper describing `GROOT`:
+
+> Rowe WPM, Winn MD. Indexed variation graphs for efficient and accurate resistome profiling. bioRxiv. 2018. doi: [https://doi.org/10.1101/270835](https://doi.org/10.1101/270835)
