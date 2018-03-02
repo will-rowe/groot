@@ -24,7 +24,7 @@ The aims are:
 
 Use conda to set up an environment with all the software we need for this tutorial:
 
-``` bash
+```
 conda create -n grootTutorial -c bioconda parallel==20171222 sra-tools==2.8 fastqc==0.11.7 bbmap==37.90 multiqc==1.4 groot==0.3 seqkit==0.7.2 samtools==1.4 metacherchant==0.1.0
 source activate grootTutorial
 ```
@@ -85,7 +85,7 @@ To begin, save the accession table to file:
 
 Next, use `fastq-dump` to download the sequence data from the accession table:
 
-``` bash
+```
 cut -f 1 samples.txt | parallel --gnu "fastq-dump {}"
 ```
 
@@ -95,7 +95,7 @@ cut -f 1 samples.txt | parallel --gnu "fastq-dump {}"
 
 Run [FastQC](https://www.bioinformatics.ba) and check the quality of the data:
 
-``` bash
+```
 ls *.fastq | parallel --gnu "fastqc {}"
 multiqc .
 ```
@@ -188,12 +188,11 @@ We have now compared the proportion of ARG-derived reads from urban and rural sa
 
 The main advantage of GROOT is that it will generate a resistome profile by reporting full-length ARGs. To do this, we need to use the `groot report` command. The report command will output a tab separated file that looks like this:
 
-|ARG|read count|gene length|coverage|
-|-|-|-|-|
-|argannot~~~(Bla)cfxA4~~~AY769933:1-966|452|966|966M|
-|...|...|...|...|
-<sup>\*  the header is not printed in the actual report</sup>
-
+<table>
+    <tr><th>ARG</th><th>read count</th><th>gene length</th><th>coverage</th></tr>
+    <tr><td>argannot~~~(Bla)cfxA4~~~AY769933:1-966</td><td>452</td><td>966</td><td>966M</td></tr>
+</table>
+<sup>*  the header is not printed in the actual report</sup>
 
 Let's report the resistome profiles for each of our samples:
 
@@ -248,12 +247,13 @@ wc -l combined-profiles.lowCov.*
 
 We've now ended up with a lot more ARGs being reported thanks to the `--lowCov` option; the downside is that we no longer have 100% length matches and we need to inspect the reports more closely. Here is an example report (SRR4454598):
 
-|ARG|read count|gene length|coverage|
-|-|-|-|-|
-|argannot~~~(Bla)OXA-347~~~JN086160:1583-2407|41|825|2D822M1D|
-|argannot~~~(Bla)cfxA5~~~AY769934:28-993|235|966|962M4D|
-|argannot~~~(MLS)ErmB~~~M11180:714-1451|245|738|2D728M8D|
-|argannot~~~(Tet)TetQ~~~Z21523:362-2287|1117|1974|3D1971M|
+<table>
+    <tr><th>ARG</th><th>read count</th><th>gene length</th><th>coverage</th></tr>
+    <tr><td>argannot~~~(Bla)OXA-347~~~JN086160:1583-2407</td><td>41</td><td>825</td><td>2D822M1D</td></tr>
+    <tr><td>argannot~~~(Bla)cfxA5~~~AY769934:28-993</td><td>235</td><td>966</td><td>962M4D</td></tr>
+    <tr><td>argannot~~~(MLS)ErmB~~~M11180:714-1451</td><td>245</td><td>738</td><td>2D728M8D</td></tr>
+    <tr><td>argannot~~~(Tet)TetQ~~~Z21523:362-2287</td><td>1117</td><td>1974</td><td>3D1971M</td></tr>
+</table>
 
 The final column of the GROOT report output is a CIGAR-like representation of the covered bases: M=covered D=absent. The read count and coverage (plus the coverage plots) can help us assess the confidence in the reported genes when we use `--lowCov`. We can also check if reported ARGs share classified reads (i.e. multimappers). To compare reads aligning to 2 ARGs, you could try some commands like this:
 
