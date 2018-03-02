@@ -139,7 +139,7 @@ func (proc *FastaHandler) Run() {
 			continue
 		}
 		// grab the fasta header if the line starts with a chevron
-		if line[0] == '>' {
+		if line[0] == 62 {
 			// if we already have a header in memory, this new header signals the end of the previous sequence - now save the previous header and sequence together
 			if len(header) != 0 {
 				// create fasta entry
@@ -163,7 +163,6 @@ func (proc *FastaHandler) Run() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// send on the new entry and reset the line stores
 	proc.Output <- newEntry
 }
 

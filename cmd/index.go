@@ -88,6 +88,10 @@ func indexParamCheck() error {
 	}
 	// check the we have received some MSA files TODO: could do with a better way of collecting these
 	err := filepath.Walk(*msaDir, func(path string, f os.FileInfo, err error) error {
+		// ignore dot files
+		if f.Name()[0] == 46 {
+        	return nil
+    	}
 		if len(strings.Split(path, ".msa")) == 2 {
 			msaList = append(msaList, path)
 		}
