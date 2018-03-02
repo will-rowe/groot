@@ -22,9 +22,9 @@ The aims are:
 
 ## 1. Setup an environment
 
-Use conda to set up an environment with all the software we need:
+Use conda to set up an environment with all the software we need for this tutorial:
 
-```
+``` bash
 conda create -n grootTutorial -c bioconda parallel==20171222 sra-tools==2.8 fastqc==0.11.7 bbmap==37.90 multiqc==1.4 groot==0.3 seqkit==0.7.2 samtools==1.4 metacherchant==0.1.0
 source activate grootTutorial
 ```
@@ -85,7 +85,7 @@ To begin, save the accession table to file:
 
 Next, use `fastq-dump` to download the sequence data from the accession table:
 
-```
+``` bash
 cut -f 1 samples.txt | parallel --gnu "fastq-dump {}"
 ```
 
@@ -95,7 +95,7 @@ cut -f 1 samples.txt | parallel --gnu "fastq-dump {}"
 
 Run [FastQC](https://www.bioinformatics.ba) and check the quality of the data:
 
-```
+``` bash
 ls *.fastq | parallel --gnu "fastqc {}"
 multiqc .
 ```
@@ -106,7 +106,7 @@ multiqc .
 
 Try cleaning up the 3 failed samples using [BBduk](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmap-guide/):
 
-```
+``` bash
 ls SRR4454598.fastq SRR4454599.fastq SRR4454610.fastq | parallel --gnu "bbduk.sh in={} out={/.}.trimmed.fastq qtrim=rl trimq=20 minlength=97"
 ```
 
@@ -115,17 +115,17 @@ ls SRR4454598.fastq SRR4454599.fastq SRR4454610.fastq | parallel --gnu "bbduk.sh
 
 ***
 
-## 2. Run GROOT
+## 4. Run GROOT
 
 Download the pre-clustered [ARG-ANNOT](http://en.mediterranee-infection.com/article.php?laref=283%26titre=arg-annot) database:
 
-```
+``` bash
 groot get -d arg-annot
 ```
 
 Index the ARG-ANNOT database:
 
-```
+``` bash
 groot index -i arg-annot.90 -o groot-index -l 100 -p 8
 ```
 
@@ -135,14 +135,14 @@ groot index -i arg-annot.90 -o groot-index -l 100 -p 8
 
 Align the reads against the index:
 
-```
+``` bash
 ls *.fastq | parallel --gnu "groot align -i groot-index -f {} -p 8 > {/.}.bam"
 ```
 
 * for each sample, the align subcommand produces a BAM file containing all graph traversals for each read
 * each BAM file essentially contains the ARG-derived reads in each sample
 
-### 2.a. Compare ARG diversity
+### 4.a. Compare ARG diversity
 
 Now that we have classified ARG-derived reads from all of the samples, we can compare the proportion of ARG-derived reads in urban vs. rural samples. We are aiming to replicate the analysis as presented in figure 5d of the [Winglee paper][1]:
 
@@ -184,20 +184,27 @@ This should produce a box plot like this:
 
 We have now compared the proportion of ARG-derived reads from urban and rural samples. This has just used the ARG-derived reads, as was done in the original paper. Although the mean proportion of ARG-derived reads is greater in the urban set, our figure still looks a little different to the published figure. More to come on this...
 
-### 2.b. Generate resistome profiles
+### 4.b. Generate resistome profiles
 
-The main advantage of GROOT is that it will generate a resistome profile by reporting full-length ARGs. To do this, we need to use the `groot report` command. The report command will output a tab separated file that contains: ARG, read count, ARG length, coverage.
+The main advantage of GROOT is that it will generate a resistome profile by reporting full-length ARGs. To do this, we need to use the `groot report` command. The report command will output a tab separated file that looks like this:
 
-First, report the resistome profiles:
+|ARG|read count|gene length|coverage|
+|-|-|-|-|
+|argannot~~~(Bla)cfxA4~~~AY769933:1-966|452|966|966M|
+|...|...|...|...|
+<sup>\*  the header is not printed in the actual report</sup>
 
-```
+
+Let's report the resistome profiles for each of our samples:
+
+``` bash
 ls *.bam | parallel --gnu "groot report -i {} -c 1 --plotCov > {/.}.report"
 ```
 
 * `-c 1` tells groot to only report ARGs that have been entirely covered by reads, I.E. a full-length,100% identity match
 * `--plotCov` tells groot to generate coverage plots for each ARG it reports
 
-Next, combine the reports for each status (rural/urban):
+We have now generated a resistome profile for each sample, using only full-length ARG sequences (present in the ARG-ANNOT database). We can sum rural/urban resistome profiles with a little bash loop to combine reports:
 
 ``` bash
 while read -r line
@@ -212,8 +219,6 @@ done < samples.txt
 wc -l combined-profiles.*
 ```
 
-We have now generated a resistome profile for each sample, using only full-length ARG sequences (present in the ARG-ANNOT database).
-
 The number of ARGs found isn't very large and the difference between rural and urban isn't that big... Let's take a look at the coverage plots in the `./groot-plots` folder. For example:
 
 ![coplot](_static/cov-plot.png)
@@ -225,23 +230,123 @@ We can try 2 things to report more ARGs:
 * set the `--lowCov` flag for groot report -> this will report ARGs with no coverage in the first few bases at the 5' or 3' ends
 * re-index the database using a shorter MinHash signature (`-s`) or lower Jaccard similarity threshold (`-j`) -> this will increase the chance of seeding reads that partially cover a gene
 
-Let's try option 1:
+Option 2 takes a bit longer as we need to go all the way back in the workflow to indexing, so let's try option 1 for now:
 
+``` bash
+ls *.bam | parallel --gnu "groot report -i {} --lowCov > {/.}.lowCov.report"
+while read -r line
+do
+    ID=$(echo $line | cut -f1 -d ' ')
+    status=$(echo $line | cut -f2 -d ' ')
+    if [ -s $ID.lowCov.report ]
+        then
+            cat $ID.lowCov.report >> combined-profiles.lowCov.$status.tsv
+    fi
+done < samples.txt
+wc -l combined-profiles.lowCov.*
 ```
-ls *.bam | parallel --gnu "groot report -i {} --lowCov > {/.}.report"
+
+We've now ended up with a lot more ARGs being reported thanks to the `--lowCov` option; the downside is that we no longer have 100% length matches and we need to inspect the reports more closely. Here is an example report (SRR4454598):
+
+|ARG|read count|gene length|coverage|
+|-|-|-|-|
+|argannot~~~(Bla)OXA-347~~~JN086160:1583-2407|41|825|2D822M1D|
+|argannot~~~(Bla)cfxA5~~~AY769934:28-993|235|966|962M4D|
+|argannot~~~(MLS)ErmB~~~M11180:714-1451|245|738|2D728M8D|
+|argannot~~~(Tet)TetQ~~~Z21523:362-2287|1117|1974|3D1971M|
+
+The final column of the GROOT report output is a CIGAR-like representation of the covered bases: M=covered D=absent. The read count and coverage (plus the coverage plots) can help us assess the confidence in the reported genes when we use `--lowCov`. We can also check if reported ARGs share classified reads (i.e. multimappers). To compare reads aligning to 2 ARGs, you could try some commands like this:
+
+``` bash
+# split the bam by ARG
+bamtools split -in out.bam -reference
+# extract reads aligning to specific ARGs
+bedtools bamtofastq -i ARG1.bam -fq reads-aligned-to-ARG1.fq
+bedtools bamtofastq -i ARG27.bam -fq reads-aligned-to-ARG27.fq
+# find matching reads
+bbduk.sh in=reads-aligned-to-ARG1.fq ref=reads-aligned-to-ARG27.fq outm=matched.fq k=100 mm=f
 ```
+* this is a bit clunky and a new groot feature is coming which will do comparisons for us
+
+Now let's try plotting the resistome  profiles:
 
 More to content to come...
 
 ***
 
-## ARG context
+## 5. ARG context
 
+Now we have a set of ARGs we know are present in one or more samples, we might want to take a look at what is carrying these genes. We will use [metacherchant](https://www.ncbi.nlm.nih.gov/pubmed/29092015) to determine the genetic context of ARGs using subgraphs. We will also use [Bandage](https://rrwick.github.io/Bandage/) and [Kraken](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-3-r46) (not installed as part of our conda environment).
 
+Download the full ARG-ANNOT set of genes and then index with samtools:
 
+``` bash
+wget https://github.com/will-rowe/groot/raw/master/db/full-ARG-databases/arg-annot-db/argannot-args.fna
+samtools faidx argannot-args.fna
+```
 
+Now we can extract all the genes present in our resistome profiles:
 
+``` bash
+samtools faidx argannot-args.fna `cut -f1 combined-profiles.urban.tsv` > urban-args.fna
+samtools faidx argannot-args.fna `cut -f1 combined-profiles.rural.tsv` > rural-args.fna
+```
 
+Remove any duplicate genes:
 
+``` bash
+cat urban-args.fna | seqkit rmdup -s -o urban-args.fna
+cat rural-args.fna | seqkit rmdup -s -o rural-args.fna
+```
+
+As a first example, let's look at the genomic context of one ARG (`(Bla)OXA-347`) in urban samples. To begin, get the samples that contain this ARG:
+
+``` bash
+grep -l "argannot~~~(Bla)OXA-347~~~JN086160:1583-2407" *.lowCov.report | sed 's/.lowCov.report//' > samples-containing-blaOXA-347.list
+```
+
+We also need to store the reference sequence:
+
+``` bash
+samtools faidx argannot-args.fna "argannot~~~(Bla)OXA-347~~~JN086160:1583-2407" > blaOXA-347.fna
+```
+
+Now we can run metacherchant:
+
+``` bash
+while read -r sample
+    do
+	metacherchant.sh --tool environment-finder \
+        -k 31 \
+        --coverage=2 \
+        --maxradius 1000 \
+        --reads ${sample}.fastq \
+        --seq blaOXA-347.fna \
+        --output "./metacherchant/${sample}/output" \
+        --work-dir "./metacherchant/${sample}/workDir" \
+	    -p 42 \
+	    --trim
+    done < samples-containing-blaOXA-347.list
+```
+
+To classify the contigs assembled around the detected ARGs, try Kraken:
+
+``` bash
+while read -r sample
+    do
+        kraken --threads 8 --preload --fasta-input --db /path/to/minikraken_20141208 metacherchant/${sample}/output/seqs.fasta | kraken-report --db /path/to/minikraken_20141208 > metacherchant/${sample}/${sample}-kraken.report
+    done < samples-containing-blaOXA-347.list
+```
+<sup>\*  you will need to install kraken and download minikraken for this</sup>
+
+To visualise the ARG context, first load the assembly graph into Bandage:
+
+``` bash
+Bandage load metacherchant/SRR4454592/output/graph.gfa
+```
+
+Next,
+
+More content to come soon...
 
 [1]: https://doi.org/10.1186/s40168-017-0338-7
