@@ -1,7 +1,5 @@
 <div align="center">
-  <img src="paper/img/misc/groot-logo.png?raw=true?" alt="groot-logo" width="250">
-  <br><br>
-  <h1>GROOT</h1>
+  <img src="paper/img/misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
   <h3><a style="color:#FF6600">G</a>raphing <a style="color:#FF6600">R</a>esistance <a style="color:#FF6600">O</a>ut <a style="color:#FF6600">O</a>f me<a style="color:#FF6600">T</a>agenomes</h3>
   <hr>
   <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
@@ -31,7 +29,7 @@ Check out the [releases](https://github.com/will-rowe/groot/releases) to downloa
 conda install groot
 ```
 
-> If using Conda, make sure you have added the [Bioconda](https://bioconda.github.io/) channel first.
+> note: if using Conda make sure you have added the [Bioconda](https://bioconda.github.io/) channel first
 
 ### Source
 
@@ -55,18 +53,19 @@ go build ./
 
 ## Quick Start
 
-`GROOT` is called by typing **groot**, followed by the command you wish to run. There are three main commands: **index**, **align** and **report**. This quick start will show you how to get things running but it is recommended to follow the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest).
+`GROOT` is called by typing **groot**, followed by the subcommand you wish to run. There are three main subcommands: **index**, **align** and **report**. This quick start will show you how to get things running but it is recommended to follow the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest).
 
 ```bash
 # Get a pre-clustered ARG database
 groot get -d arg-annot
 
 # Create graphs and index
-groot index -i arg-annot.90 -o groot-index
+groot index -i arg-annot.90 -o groot-index -l 100
 
 # Align reads and report
 groot align -i groot-index -f reads.fq | groot report
 ```
+>note: you must run the index subcommand using your query read length (e.g. `-l 100` for 100bp reads)
 
 
 ## Further Information & Citing
