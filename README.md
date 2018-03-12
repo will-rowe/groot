@@ -1,13 +1,15 @@
 <div align="center">
-  <img src="paper/img/misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
-  <h3><a style="color:#FF6600">G</a>raphing <a style="color:#FF6600">R</a>esistance <a style="color:#FF6600">O</a>ut <a style="color:#FF6600">O</a>f me<a style="color:#FF6600">T</a>agenomes</h3>
-  <hr>
-  <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
-  <a href='http://groot-documentation.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/groot-documentation/badge/?version=latest' alt='Documentation Status' /></a>
- <a href="https://goreportcard.com/report/github.com/will-rowe/groot"><img src="https://goreportcard.com/badge/github.com/will-rowe/groot" alt="reportcard"></a>
-  <a href="https://github.com/will-rowe/groot/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License"></a>
-  <a href="https://bioconda.github.io/recipes/groot/README.html"><img src="https://anaconda.org/bioconda/groot/badges/version.svg" alt="bioconda"></a>
-  <a href="https://zenodo.org/badge/latestdoi/117543539"><img src="https://zenodo.org/badge/117543539.svg" alt="DOI"></a>
+    <img src="paper/img/misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
+    <h3><a style="color:#D5672C">G</a>raphing <a style="color:#D5672C">R</a>esistance <a style="color:#D5672C">O</a>ut <a style="color:#D5672C">O</a>f me<a style="color:#D5672C">T</a>agenomes</h3>
+    <hr>
+    <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
+    <a href='http://groot-documentation.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/groot-documentation/badge/?version=latest' alt='Documentation Status' /></a>
+    <a href="https://goreportcard.com/report/github.com/will-rowe/groot"><img src="https://goreportcard.com/badge/github.com/will-rowe/groot" alt="reportcard"></a>
+    <a href="https://github.com/will-rowe/groot/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License"></a>
+    <a href="https://zenodo.org/badge/latestdoi/117543539"><img src="https://zenodo.org/badge/117543539.svg" alt="DOI"></a>
+    <a href="https://gitter.im/groot-help/Lobby"><img src="https://img.shields.io/badge/chat-gitter-8A2BE2.svg" alt="bioconda"></a>
+    <a href="https://bioconda.github.io/recipes/groot/README.html"><img src="
+    https://anaconda.org/bioconda/groot/badges/downloads.svg" alt="bioconda"></a>
 </div>
 
 ***
@@ -74,4 +76,4 @@ Please [readthedocs](http://groot-documentation.readthedocs.io/en/latest/?badge=
 
 We also have a preprint paper describing `GROOT`:
 
-> Rowe WPM, Winn MD. Indexed variation graphs for efficient and accurate resistome profiling. bioRxiv. 2018. doi: [https://doi.org/10.1101/270835](https://doi.org/10.1101/270835)
+> [Rowe WPM, Winn MD. Indexed variation graphs for efficient and accurate resistome profiling. bioRxiv. 2018. doi: https://doi.org/10.1101/270835](https://doi.org/10.1101/270835)
