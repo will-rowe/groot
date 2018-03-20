@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"log"
 	"os"
+	"strings"
 )
 
 // a function to throw error to the log and exit the program
@@ -13,6 +14,24 @@ func ErrorCheck(msg error) {
 	if msg != nil {
 		log.Fatal("encountered error: ", msg)
 	}
+}
+
+// StartLogging is a function to start the log...
+func StartLogging(logFile string) *os.File {
+	logPath := strings.Split(logFile, "/")
+	joinedLogPath := strings.Join(logPath[:len(logPath)-1], "/")
+	if len(logPath) > 1 {
+		if _, err := os.Stat(joinedLogPath); os.IsNotExist(err) {
+			if err := os.MkdirAll(joinedLogPath, 0700); err != nil {
+				log.Fatal("can't create specified directory for log")
+			}
+		}
+	}
+	logFH, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return logFH
 }
 
 // a function to print an array of unsigned integers as a string - taken from https://github.com/ekzhu/minhash-lsh TODO: benchmark with other stringify options

@@ -28,7 +28,6 @@ import (
 	"github.com/will-rowe/groot/src/reporting"
 	"log"
 	"os"
-	"runtime"
 	"strings"
 )
 
@@ -99,11 +98,6 @@ func reportParamCheck() error {
 	if *covCutoff > 1.0 {
 		return fmt.Errorf("supplied coverage cutoff exceeds 1.0 (100%): %v", *covCutoff)
 	}
-	// set number of processors to use
-	if *proc <= 0 || *proc > runtime.NumCPU() {
-		*proc = runtime.NumCPU()
-	}
-	runtime.GOMAXPROCS(*proc)
 	return nil
 }
 
@@ -111,13 +105,6 @@ func reportParamCheck() error {
   The main function for the align sub-command
 */
 func runReport() {
-	// set up logging
-	logFH, err := os.OpenFile("groot-report.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer logFH.Close()
-	log.SetOutput(logFH)
 	log.Printf("starting the report command")
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")

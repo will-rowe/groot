@@ -12,4 +12,5 @@ go build
 # align the test reads
 ./groot align -p 1 -i test-index -f testing/full-argannot-perfect-reads-small.fq.gz > out.bam
 
-## TODO: check the output bam file is as expected
+# report
+./groot report -i out.bam

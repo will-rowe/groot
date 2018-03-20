@@ -34,13 +34,6 @@ type Sequence struct {
 }
 
 /*
-  struct to hold FASTA data for a single entry
-*/
-type FASTAentry struct {
-	Sequence
-}
-
-/*
   struct to hold FASTQ data and seed locations for a single read
 */
 type FASTQread struct {
@@ -57,6 +50,7 @@ type FASTQread struct {
 type Key struct {
 	GraphID int
 	Node    int
+	OffSet  int
 	RC      bool
 }
 
@@ -163,16 +157,4 @@ func NewFASTQread(l1 []byte, l2 []byte, l3 []byte, l4 []byte) (FASTQread, error)
 	read.Misc = l3
 	read.Qual = l4
 	return *read, nil
-}
-
-/*
-  function to generate new fasta entry
-*/
-func NewFASTAentry(header []byte, seq []byte) (FASTAentry, error) {
-	//TODO: need to add some checks here
-	// create a FASTAentry struct
-	entry := new(FASTAentry)
-	entry.ID = header
-	entry.Seq = seq
-	return *entry, nil
 }

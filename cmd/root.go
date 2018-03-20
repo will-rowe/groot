@@ -29,8 +29,10 @@ import (
 
 // the command line arguments
 var (
-	proc      *int  // number of processors to use
-	profiling *bool // create profile for go pprof
+	proc           *int    // number of processors to use
+	logFile        *string // name to use for log file
+	profiling      *bool   // create profile for go pprof
+	defaultLogFile = "./groot.log"
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -57,6 +59,7 @@ var RootCmd = &cobra.Command{
 */
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	// launch subcommand
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -68,5 +71,6 @@ func Execute() {
 */
 func init() {
 	proc = RootCmd.PersistentFlags().IntP("processors", "p", 1, "number of processors to use")
+	logFile = indexCmd.Flags().StringP("logFile", "y", defaultLogFile, "filename for log file")
 	profiling = RootCmd.PersistentFlags().Bool("profiling", false, "create the files needed to profile GROOT using the go tool pprof")
 }
