@@ -32,16 +32,26 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.GrootGraph, refs []*sa
 		// try exact alignment
 		IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, offset, 0)
 		// if unsuccessful then try shuffling the seed forward
-		if len(IDs) != 0 {
+		if len(IDs) == 0 {
 			shuffles := 5
 			for shuffles > 0 {
-				//for nodeShift < 5 {
 				IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, offset, shuffles)
 				if len(IDs) != 0 {
 					break
 				}
 				shuffles--
 			}
+		}
+		// if unsuccessful, try starting the alignment from the last base in the previous node
+		if len(IDs) == 0 {
+			if (seedNodeID - 1) > 0 {
+					NodeLookup, ok := graph.NodeLookup[seedNodeID-1]
+					if !ok {
+						misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
+					}
+					tmpOffset := len(graph.SortedNodes[NodeLookup].Sequence)-1
+					IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, tmpOffset, 0)
+				}
 		}
 		// if still unsuccessful, try clipping the end of the read
 		hardClip := 0
@@ -130,6 +140,11 @@ func DFSrecursive(node *graph.GrootGraphNode, graph *graph.GrootGraph, read *[]b
 		if distance == readLength {
 			break
 		}
+		// skip to the next base and index position if the reference base is an N. TODO: better handling of non-ACTG bases in reference graphs
+		if base == 'N' {
+			distance++
+			continue
+		}
 		// increment the distance counter for each match
 		if base == (*read)[distance] {
 			distance++
@@ -191,10 +206,10 @@ func processTraversal(graph *graph.GrootGraph, paths [][]int, offset int) ([]int
 			if !ok {
 				misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
 			}
-			node := graph.SortedNodes[NodeLookup]
 			// record the alignment against this node
-			node.IncrementReadCount()
+			graph.SortedNodes[NodeLookup].IncrementReadCount()
 			// tally the parent IDs of this node
+			node := graph.SortedNodes[NodeLookup]
 			for _, id := range node.PathIDs {
 				if _, ok := nodeIDs[id]; ok {
 					nodeIDs[id]++

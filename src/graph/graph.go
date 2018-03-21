@@ -68,9 +68,14 @@ func CreateGrootGraph(gfaInstance *gfa.GFA, id int) (*GrootGraph, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not convert segment name from GFA into an int for groot graph: %v", segment.Name)
 		}
+		// convert all bases to upperCase and check for non-ACTGN chars
+		seq := seqio.Sequence{Seq: segment.Sequence}
+		if err := seq.BaseCheck(); err != nil {
+			return nil, err
+		}
 		newNode := &GrootGraphNode{
 			SegmentID: id,
-			Sequence:  segment.Sequence,
+			Sequence:  seq.Seq,
 			Position:  make(map[int]int),
 		}
 		// store the new node in the graph and record it's location in the silce by using the NodeLookup map
@@ -349,9 +354,11 @@ func (graph *GrootGraph) DumpGraph(dirName string) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		cov4bandage := node.ReadCount * len(node.Sequence)
-		readCount := fmt.Sprintf("RC:i:%v", cov4bandage)
-		ofs, err := gfa.NewOptionalFields([]byte(readCount))
+		// I'm weighting the RC so that bandage will display the depth nicely for the graph paths
+		readCount := fmt.Sprintf("RC:i:%d", (node.ReadCount*len(node.Sequence)))
+		// FragCount is the raw readcount
+		fragCount := fmt.Sprintf("FC:i:%d", node.ReadCount)
+		ofs, err := gfa.NewOptionalFields([]byte(readCount), []byte(fragCount))
 		if err != nil {
 			return 0, err
 		}
@@ -372,8 +379,8 @@ func (graph *GrootGraph) DumpGraph(dirName string) (int, error) {
 		return 0, nil
 	}
 	// create the paths
-	segments, overlaps := [][]byte{}, [][]byte{}
 	for pathID, pathName := range graph.Paths {
+			segments, overlaps := [][]byte{}, [][]byte{}
 			for _, node := range graph.SortedNodes {
 				for _, id := range node.PathIDs {
 					if id == pathID {

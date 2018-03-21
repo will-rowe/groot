@@ -5,7 +5,6 @@ package seqio
 
 import (
 	"errors"
-	"fmt"
 	"unicode"
 
 	"github.com/dgryski/go-farm"
@@ -68,10 +67,9 @@ func (self *Sequence) BaseCheck() error {
 			self.Seq[i] = byte(base)
 		case 'N':
 			self.Seq[i] = byte(base)
-		case '-':
-			continue
 		default:
-			return fmt.Errorf("non \"A\\C\\T\\G\\N\\-\" base (%v)", string(self.Seq[i]))
+			//return fmt.Errorf("non \"A\\C\\T\\G\\N\\-\" base (%v)", string(self.Seq[i]))
+			self.Seq[i] = byte('N')
 		}
 	}
 	return nil

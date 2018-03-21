@@ -102,9 +102,12 @@ func reportParamCheck() error {
 }
 
 /*
-  The main function for the align sub-command
+  The main function for the report sub-command
 */
 func runReport() {
+	logFH := misc.StartLogging(*logFile)
+	defer logFH.Close()
+	log.SetOutput(logFH)
 	log.Printf("starting the report command")
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
