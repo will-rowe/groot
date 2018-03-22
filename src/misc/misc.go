@@ -50,7 +50,7 @@ func Stringify(sig []uint64) string {
   A type to save the command information
 */
 type IndexInfo struct {
-	Version string
+	Version    string
 	Ksize      int
 	SigSize    int
 	JSthresh   float64
