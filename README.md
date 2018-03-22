@@ -16,10 +16,11 @@
 
 ## Overview
 
-`GROOT` is a tool to type **Antibiotic Resistance Genes** (**ARGs**) in metagenomic samples. It combines variation graph representation of gene sets with an LSH indexing scheme to allow for fast classification of metagenomic reads. Subsequent hierarchical local alignment of classified reads against graph traversals facilitates accurate reconstruction of full-length gene sequences using a simple scoring scheme.
+`GROOT` is a tool to type **Antibiotic Resistance Genes** (**ARGs**) in metagenomic samples (a.k.a. **Resistome Profiling**). It combines variation graph representation of gene sets with an LSH indexing scheme to allow for fast classification of metagenomic reads. Subsequent hierarchical local alignment of classified reads against graph traversals facilitates accurate reconstruction of full-length gene sequences using a simple scoring scheme.
 
-`GROOT` will output an ARG alignment file (in BAM format) that contains the graph traversals possible for each query read; the alignment file is then used to generate a simple ARG typing report.
+`GROOT` will output an ARG alignment file (in BAM format) that contains the graph traversals possible for each query read; the alignment file is then used by `GROOT` to generate a resistome profile.
 
+Since version 0.4, `GROOT` will also output the variation graphs which had reads align. These graphs are in [GFA format](https://github.com/GFA-spec/GFA-spec), allowing you to visualise graph alignments using [Bandage](https://github.com/rrwick/Bandage) and determine which variants of a given ARG type are dominant in your metagenomes. Read the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more info. 
 
 ## Installation
 
