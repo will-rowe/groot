@@ -5,9 +5,6 @@ language: go
 go:
  - 1.9
 
-before_install:
-  - sh ./testing/run_install_dependencies.sh
-
 install:
  - go get -d -t -v ./...
  - go test -v ./...

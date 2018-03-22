@@ -37,6 +37,7 @@ import (
 	"github.com/will-rowe/groot/src/lshForest"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/seqio"
+	"github.com/will-rowe/groot/src/version"
 )
 
 // the command line arguments
@@ -122,7 +123,8 @@ func runIndex() {
 	logFH := misc.StartLogging(*logFile)
 	defer logFH.Close()
 	log.SetOutput(logFH)
-	log.Printf("starting the index command")
+	log.Printf("i am groot (version %s)", version.VERSION)
+	log.Printf("starting the index subcommand")
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
 	misc.ErrorCheck(indexParamCheck())
@@ -230,7 +232,7 @@ func runIndex() {
 	log.Printf("\tnumber of buckets: %d\n", numBucks)
 	///////////////////////////////////////////////////////////////////////////////////////
 	// record runtime info
-	info := &misc.IndexInfo{Ksize: *kSize, SigSize: *sigSize, JSthresh: *jsThresh, ReadLength: *readLength}
+	info := &misc.IndexInfo{Version: version.VERSION, Ksize: *kSize, SigSize: *sigSize, JSthresh: *jsThresh, ReadLength: *readLength}
 	// save the index files
 	log.Printf("saving index files to \"%v\"...", *outDir)
 	misc.ErrorCheck(info.Dump(*outDir + "/index.info"))

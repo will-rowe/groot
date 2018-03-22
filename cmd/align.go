@@ -35,6 +35,7 @@ import (
 	"github.com/will-rowe/groot/src/lshForest"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/stream"
+	"github.com/will-rowe/groot/src/version"
 )
 
 // the command line arguments
@@ -130,6 +131,11 @@ func alignParamCheck() error {
 			}
 		}
 	}
+	info := new(misc.IndexInfo)
+	misc.ErrorCheck(info.Load(*indexDir + "/index.info"))
+	if info.Version != version.VERSION {
+		return fmt.Errorf("the groot index was created with a different version of groot (you are currently using version %v)", version.VERSION)
+	}
 	// setup the graphDir
 	if _, err := os.Stat(*graphDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(*graphDir, 0700); err != nil {
@@ -157,7 +163,8 @@ func runAlign() {
 	logFH := misc.StartLogging(*logFile)
 	defer logFH.Close()
 	log.SetOutput(logFH)
-	log.Printf("starting the align command")
+	log.Printf("i am groot (version %s)", version.VERSION)
+	log.Printf("starting the align subcommand")
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
 	misc.ErrorCheck(alignParamCheck())

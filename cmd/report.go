@@ -23,12 +23,14 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/will-rowe/groot/src/misc"
-	"github.com/will-rowe/groot/src/reporting"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/will-rowe/groot/src/misc"
+	"github.com/will-rowe/groot/src/reporting"
+	"github.com/will-rowe/groot/src/version"
 )
 
 // the command line arguments
@@ -108,7 +110,8 @@ func runReport() {
 	logFH := misc.StartLogging(*logFile)
 	defer logFH.Close()
 	log.SetOutput(logFH)
-	log.Printf("starting the report command")
+	log.Printf("i am groot (version %s)", version.VERSION)
+	log.Printf("starting the report subcommand")
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
 	misc.ErrorCheck(reportParamCheck())
