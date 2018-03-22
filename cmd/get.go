@@ -34,12 +34,14 @@ import (
 )
 
 // available databases to download
-var availDb = []string{"arg-annot", "resfinder", "card"}
+var availDb = []string{"arg-annot", "resfinder", "card", "groot-db", "groot-core-db"}
 var availIdent = []string{"90"}
 var md5sums = map[string]string{
-	"arg-annot.90": "d5398b7bd40d7e872c3e4a689cee4726",
-	"resfinder.90": "de34ab790693cb7c7b656d537ec40f05",
-	"card.90":      "3e8a7b56fb7ce1c857299decac2d71c2",
+	"arg-annot.90":     "d5398b7bd40d7e872c3e4a689cee4726",
+	"resfinder.90":     "de34ab790693cb7c7b656d537ec40f05",
+	"card.90":          "3e8a7b56fb7ce1c857299decac2d71c2",
+	"groot-db.90":      "2cbbe9a89c2ce23c09575198832250d3",
+	"groot-core-db.90": "dd4329805497090b64d6a2f9949fef16",
 }
 
 // url to download databases from
@@ -64,7 +66,7 @@ var getCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(getCmd)
-	database = getCmd.Flags().StringP("database", "d", "arg-annot", "database to download (please choose: arg-annot/resfinder/card)")
+	database = getCmd.Flags().StringP("database", "d", "arg-annot", "database to download (please choose: arg-annot/resfinder/card/groot-db/groot-core-db)")
 	identity = getCmd.Flags().StringP("identity", "i", "90", "the sequence identity used to cluster the database (only 90 available atm)")
 	dbDir = getCmd.PersistentFlags().StringP("out", "o", ".", "directory to save the database to")
 }
@@ -81,7 +83,7 @@ func getParamCheck() error {
 		}
 	}
 	if checkPass == false {
-		return fmt.Errorf("unrecognised DB: %v\n\nplease choose either: arg-annot, resfinder or card", *database)
+		return fmt.Errorf("unrecognised DB: %v\n\nplease choose either: arg-annot/resfinder/card/groot-db/groot-core-db", *database)
 	}
 	checkPass = false
 	for _, avail := range availIdent {
