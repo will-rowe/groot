@@ -45,13 +45,13 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.GrootGraph, refs []*sa
 		// if unsuccessful, try starting the alignment from the last base in the previous node
 		if len(IDs) == 0 {
 			if (seedNodeID - 1) > 0 {
-				NodeLookup, ok := graph.NodeLookup[seedNodeID-1]
-				if !ok {
-					misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
+					NodeLookup, ok := graph.NodeLookup[seedNodeID-1]
+					if !ok {
+						misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
+					}
+					tmpOffset := len(graph.SortedNodes[NodeLookup].Sequence)-1
+					IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, tmpOffset, 0)
 				}
-				tmpOffset := len(graph.SortedNodes[NodeLookup].Sequence) - 1
-				IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, tmpOffset, 0)
-			}
 		}
 		// if still unsuccessful, try clipping the end of the read
 		hardClip := 0
@@ -73,8 +73,8 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.GrootGraph, refs []*sa
 			for _, ID := range IDs {
 				record := &sam.Record{
 					Name: string(read.ID[1:]),
-					Seq:  sam.NewSeq(read.Seq[0 : len(read.Seq)-hardClip]),
-					Qual: read.Qual[0 : len(read.Seq)-hardClip],
+					Seq:  sam.NewSeq(read.Seq[0:len(read.Seq)-hardClip]),
+					Qual: read.Qual[0:len(read.Seq)-hardClip],
 				}
 				// add the reference
 				record.Ref = refs[ID]
@@ -148,13 +148,13 @@ func DFSrecursive(node *graph.GrootGraphNode, graph *graph.GrootGraph, read *[]b
 		// increment the distance counter for each match
 		if base == (*read)[distance] {
 			distance++
-			// if no match but performing shuffled alignment, decrement the shuffle
-		} else if (len(path) == 0) && (shuffle > 0) {
-			shuffle--
-			continue
-			// if no shuffle or shuffle is finished, terminate this DFS
+		// if no match but performing shuffled alignment, decrement the shuffle
+		} else if (len(path)== 0) && (shuffle > 0) {
+				shuffle--
+				continue
+		// if no shuffle or shuffle is finished, terminate this DFS
 		} else {
-			return false
+				return false
 		}
 	}
 	// increment the path to include the segment that has just been matched

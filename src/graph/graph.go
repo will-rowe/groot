@@ -26,7 +26,7 @@ type GrootGraphNode struct {
 	OutEdges  []int
 	PathIDs   []int       // a reference to the paths that use this segment (equivalent to the linear reference from which this segment is derived) (value corresponds to key in GrootGraph.Paths)
 	Position  map[int]int // the start position of this segment in each reference sequence, using 1-based indexing (lookup key corresponds to key in GrootGraph.Paths)
-	ReadCount int         // used during the alignment to record the number of reads covering a node
+	ReadCount int	// used during the alignment to record the number of reads covering a node
 }
 
 // IncrementReadCount uses a mutex to increase the read count of a node safely during alignment
@@ -355,7 +355,7 @@ func (graph *GrootGraph) DumpGraph(dirName string) (int, error) {
 			return 0, err
 		}
 		// I'm weighting the RC so that bandage will display the depth nicely for the graph paths
-		readCount := fmt.Sprintf("RC:i:%d", (node.ReadCount * len(node.Sequence)))
+		readCount := fmt.Sprintf("RC:i:%d", (node.ReadCount*len(node.Sequence)))
 		// FragCount is the raw readcount
 		fragCount := fmt.Sprintf("FC:i:%d", node.ReadCount)
 		ofs, err := gfa.NewOptionalFields([]byte(readCount), []byte(fragCount))
@@ -380,24 +380,24 @@ func (graph *GrootGraph) DumpGraph(dirName string) (int, error) {
 	}
 	// create the paths
 	for pathID, pathName := range graph.Paths {
-		segments, overlaps := [][]byte{}, [][]byte{}
-		for _, node := range graph.SortedNodes {
-			for _, id := range node.PathIDs {
-				if id == pathID {
-					segment := strconv.Itoa(node.SegmentID) + "+"
-					overlap := strconv.Itoa(len(node.Sequence)) + "M"
-					segments = append(segments, []byte(segment))
-					overlaps = append(overlaps, []byte(overlap))
-					break
+			segments, overlaps := [][]byte{}, [][]byte{}
+			for _, node := range graph.SortedNodes {
+				for _, id := range node.PathIDs {
+					if id == pathID {
+						segment := strconv.Itoa(node.SegmentID) + "+"
+						overlap := strconv.Itoa(len(node.Sequence)) + "M"
+						segments = append(segments, []byte(segment))
+						overlaps = append(overlaps, []byte(overlap))
+						break
+					}
 				}
 			}
-		}
-		// add the path
-		path, err := gfa.NewPath(pathName, segments, overlaps)
-		if err != nil {
-			return 0, err
-		}
-		path.Add(newGFA)
+			// add the path
+			path, err := gfa.NewPath(pathName, segments, overlaps)
+			if err != nil {
+				return 0, err
+			}
+			path.Add(newGFA)
 	}
 	// create a gfaWriter and write the GFA instance
 	firstSeqID := string(bytes.Replace(graph.Paths[0], []byte("/"), []byte(""), -1))
