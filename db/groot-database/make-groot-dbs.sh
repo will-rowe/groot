@@ -48,25 +48,35 @@ cd .. && rm -r resfinder
 #wget --no-check-certificate -O ../megares-refs.fna $megaresLink
 #cd .. && rm -r megares
 
-# Create a reference file for the core database
-seqkit common *.fna --by-seq --ignore-case -o core-args.fasta -j 8
-
-# Cluster core set
-mkdir groot-core-db.90 && cd $_
-vsearch --cluster_size ../core-args.fasta --id 0.90 --msaout MSA.tmp
-awk '!a[$0]++ {of="./cluster-" ++fc ".msa"; print $0 >> of ; close(of)}' RS= ORS="\n\n" MSA.tmp && rm MSA.tmp
-date +%x_%H:%M:%S:%N | sed 's/\(:[0-9][0-9]\)[0-9]*$/\1/' > timestamp.txt
-cd ..
-
 # Create a reference file for the complete database
 cat *.fna > all-args.fasta
 seqkit rmdup --by-seq --ignore-case -j 8 -o all-args.dedup.fasta < all-args.fasta
 
-# Cluster total set
+# Cluster total set and create groot-db
 mkdir groot-db.90 && cd $_
 vsearch --cluster_size ../all-args.dedup.fasta --id 0.90 --msaout MSA.tmp
 awk '!a[$0]++ {of="./cluster-" ++fc ".msa"; print $0 >> of ; close(of)}' RS= ORS="\n\n" MSA.tmp && rm MSA.tmp
 date +%x_%H:%M:%S:%N | sed 's/\(:[0-9][0-9]\)[0-9]*$/\1/' > timestamp.txt
+cd ..
+
+# Create the groot-core-db
+mkdir groot-core-db.90 && cd $_
+cat ../*.fna > all-args.fasta
+vsearch --cluster_size ../all-args.fasta --id 1 --msaout MSA.tmp
+awk '!a[$0]++ {of="./cluster-" ++fc ".msa"; print $0 >> of ; close(of)}' RS= ORS="\n\n" MSA.tmp && rm MSA.tmp
+for i in *.msa
+do
+    seqNum=$(grep '>' ${i} | wc -l)
+    if [[ ${seqNum} > 3 ]]; then
+        grep '>' -m 1 ${i} | sed 's/>\*//' >> core-seqs.txt
+    fi
+    rm ${i}
+done
+cat all-args.fasta | seqkit grep -f core-seqs.txt > core-seqs.fna
+vsearch --cluster_size core-seqs.fna --id 0.90 --msaout MSA.tmp
+awk '!a[$0]++ {of="./cluster-" ++fc ".msa"; print $0 >> of ; close(of)}' RS= ORS="\n\n" MSA.tmp && rm MSA.tmp
+date +%x_%H:%M:%S:%N | sed 's/\(:[0-9][0-9]\)[0-9]*$/\1/' > timestamp.txt
+rm core-seq* all-arg*
 cd ..
 
 # Finish up
