@@ -78,9 +78,6 @@ func indexParamCheck() error {
 	if *msaDir == "" {
 		misc.ErrorCheck(fmt.Errorf("no MSA directory specified - run `groot index --help` for more info on the command"))
 	}
-	if _, err := os.Stat(*msaDir); os.IsNotExist(err) {
-		return fmt.Errorf("can't find specified MSA directory")
-	}
 	// check the we have received some MSA files TODO: could do with a better way of collecting these
 	err := filepath.Walk(*msaDir, func(path string, f os.FileInfo, err error) error {
 		// ignore dot files

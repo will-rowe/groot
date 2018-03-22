@@ -40,13 +40,13 @@ import (
 
 // the command line arguments
 var (
-	trimSwitch      *bool                                                             // enable quality based trimming of reads
-	minQual         *int                                                              // minimum base quality (used in quality based trimming)
-	minRL           *int                                                              // minimum read length (evaluated post trimming)
-	clip            *int                                                              // maximum number of clipped bases allowed during local alignment
-	indexDir        *string                                                           // directory containing the index files
-	fastq           *[]string                                                         // list of FASTQ files to align
-	graphDir        *string                                                           // directory to save gfa graphs to
+	trimSwitch *bool     // enable quality based trimming of reads
+	minQual    *int      // minimum base quality (used in quality based trimming)
+	minRL      *int      // minimum read length (evaluated post trimming)
+	clip       *int      // maximum number of clipped bases allowed during local alignment
+	indexDir   *string   // directory containing the index files
+	fastq      *[]string // list of FASTQ files to align
+	graphDir        *string  // directory to save gfa graphs to
 	defaultGraphDir = "./groot-graphs-" + string(time.Now().Format("20060102150405")) // a default graphDir
 )
 
