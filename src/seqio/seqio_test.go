@@ -54,10 +54,6 @@ func TestReadConstructor(t *testing.T) {
 	if err == nil {
 		t.Fatalf("bad FASTQ formatting now caught by NewFASTQread")
 	}
-	_, err = NewFASTAentry(l1, l2)
-	if err != nil {
-		t.Fatalf("could not generate FASTA read using NewFASTAentry")
-	}
 }
 
 func TestSeqMethods(t *testing.T) {

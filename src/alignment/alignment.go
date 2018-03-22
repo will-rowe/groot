@@ -12,14 +12,16 @@ import (
 /*
   A function to perform hierarchical local alignment of a read against a graph
 */
-func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Reference, maxClip int) <-chan *sam.Record {
+func Align(read seqio.FASTQread, seedID int, graph *graph.GrootGraph, refs []*sam.Reference, maxClip int) <-chan *sam.Record {
 	// store the ID of the first node in the seed
 	seedNodeID := read.Seeds[seedID].Node
 	// get the node location in the sorted graph using the lookup map
-	nodeLookup, ok := graph.NodeLookUp[seedNodeID]
+	NodeLookup, ok := graph.NodeLookup[seedNodeID]
 	if !ok {
 		misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
 	}
+	// get the offset in the node
+	offset := read.Seeds[seedID].OffSet
 	// create the return channel
 	returnAlignments := make(chan *sam.Record)
 	// run the hierarchical alignment
@@ -27,28 +29,29 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 		defer close(returnAlignments)
 		IDs := []int{}
 		startPos := make(map[int]int)
-		// try exact alignment, if unsuccessful then try shuffling the seed forward
-		nodeShift := 0
-		for nodeShift < 5 {
-			IDs, startPos = performAlignment(nodeLookup+nodeShift, &read.Seq, graph)
-			if len(IDs) != 0 {
-				break
-			}
-			nodeShift++
-		}
-		// try exact alignment, if unsuccessful then try shuffling the seed backward
+		// try exact alignment
+		IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, offset, 0)
+		// if unsuccessful then try shuffling the seed forward
 		if len(IDs) == 0 {
-			nodeShift = 1
-			for nodeShift < 5 {
-				if nodeLookup-nodeShift <= 0 {
-					break
-				}
-				IDs, startPos = performAlignment(nodeLookup-nodeShift, &read.Seq, graph)
+			shuffles := 5
+			for shuffles > 0 {
+				IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, offset, shuffles)
 				if len(IDs) != 0 {
 					break
 				}
-				nodeShift++
+				shuffles--
 			}
+		}
+		// if unsuccessful, try starting the alignment from the last base in the previous node
+		if len(IDs) == 0 {
+			if (seedNodeID - 1) > 0 {
+					NodeLookup, ok := graph.NodeLookup[seedNodeID-1]
+					if !ok {
+						misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
+					}
+					tmpOffset := len(graph.SortedNodes[NodeLookup].Sequence)-1
+					IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, tmpOffset, 0)
+				}
 		}
 		// if still unsuccessful, try clipping the end of the read
 		hardClip := 0
@@ -56,39 +59,22 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 		if len(IDs) == 0 {
 			for i := maxClip; i > 0; i-- {
 				clippedSeq = clippedSeq[:len(clippedSeq)-1]
-				IDs, startPos = performAlignment(nodeLookup, &clippedSeq, graph)
+				IDs, startPos = performAlignment(NodeLookup, &clippedSeq, graph, offset, 0)
 				hardClip++
 				if len(IDs) != 0 {
 					break
 				}
 			}
 		}
-		// TODO: need to handle if a read spans the start of a gene + the upstream region
-		// this is a messy fix to try and solve this
-		initClip := 0
-		clippedSeq2 := []byte{}
-		if len(IDs) == 0 {
-			if len(graph.SortedNodes[nodeLookup].InEdges) == 0 {
-				clippedSeq2 = read.Seq
-				for i := 0; i > len(read.Seq); i++ {
-					clippedSeq2 = clippedSeq2[i:]
-					IDs, startPos = performAlignment(nodeLookup, &clippedSeq2, graph)
-					initClip++
-					if len(IDs) != 0 {
-						break
-					}
-				}
-			}
-
-		}
+		// TODO: add alignment step to handle terminal alignments
 		// END hierarchical alignment
 		// report any alignments
 		if len(IDs) != 0 {
 			for _, ID := range IDs {
 				record := &sam.Record{
 					Name: string(read.ID[1:]),
-					Seq:  sam.NewSeq(read.Seq),
-					Qual: read.Qual,
+					Seq:  sam.NewSeq(read.Seq[0:len(read.Seq)-hardClip]),
+					Qual: read.Qual[0:len(read.Seq)-hardClip],
 				}
 				// add the reference
 				record.Ref = refs[ID]
@@ -99,16 +85,12 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 				if hardClip != 0 {
 					cigar = append(cigar, sam.NewCigarOp(sam.CigarMatch, len(clippedSeq)))
 					cigar = append(cigar, sam.NewCigarOp(sam.CigarHardClipped, hardClip))
-				} else if initClip != 0 {
-					cigar = append(cigar, sam.NewCigarOp(sam.CigarHardClipped, initClip))
-					cigar = append(cigar, sam.NewCigarOp(sam.CigarMatch, len(clippedSeq2)))
 				} else {
 					cigar = append(cigar, sam.NewCigarOp(sam.CigarMatch, len(read.Seq)))
 				}
 				record.Cigar = cigar
 				record.MapQ = 30 // TODO: this is just left in to have a valid SAM file, I need to set these values correctly
-				// specify the read orientation and if secondary alignment
-
+				// TODO: specify the read orientation and if secondary alignment
 				// send the record back
 				returnAlignments <- record
 			}
@@ -117,7 +99,7 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.Graph, refs []*sam.Ref
 	return returnAlignments
 }
 
-func performAlignment(nodeLookup int, read *[]byte, graph *graph.Graph) ([]int, map[int]int) {
+func performAlignment(NodeLookup int, read *[]byte, graph *graph.GrootGraph, offset, shuffle int) ([]int, map[int]int) {
 	// create some empty variables to store the ID and start Pos of any alignment
 	IDs := []int{}
 	startPos := make(map[int]int)
@@ -129,7 +111,7 @@ func performAlignment(nodeLookup int, read *[]byte, graph *graph.Graph) ([]int, 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		_ = DFSrecursive(&graph.SortedNodes[nodeLookup], graph, read, 0, []int{}, sendPath, readLength)
+		_ = DFSrecursive(graph.SortedNodes[NodeLookup], graph, read, 0, []int{}, sendPath, readLength, offset, shuffle)
 	}()
 	go func() {
 		wg.Wait()
@@ -141,7 +123,7 @@ func performAlignment(nodeLookup int, read *[]byte, graph *graph.Graph) ([]int, 
 	}
 	// process the traversals
 	if len(paths) != 0 {
-		IDs, startPos = processTraversal(graph, paths)
+		IDs, startPos = processTraversal(graph, paths, offset)
 	}
 	return IDs, startPos
 }
@@ -149,20 +131,35 @@ func performAlignment(nodeLookup int, read *[]byte, graph *graph.Graph) ([]int, 
 /*
   A function to perform an alignment using recursive depth first search of a variation graph
 */
-func DFSrecursive(node *graph.Node, graph *graph.Graph, read *[]byte, distance int, path []int, sendPath chan []int, readLength int) bool {
+func DFSrecursive(node *graph.GrootGraphNode, graph *graph.GrootGraph, read *[]byte, distance int, path []int, sendPath chan []int, readLength, offset, shuffle int) bool {
 	// a switch to halt the current path traversal upon exact alignment covering whole read
 	aligned := false
-
-	// increment the path if a match between the node in the graph and the corresponding position in the read occurs
-	if node.Base == (*read)[distance] {
-		distance++
-		path = append(path, node.ID)
-		// if no match, stop traversing the current path
-	} else {
-		return false
+	// iterate over the segment sequence held by this node and check matches
+	for _, base := range node.Sequence[offset:] {
+		// stop matching if the read length has been reached
+		if distance == readLength {
+			break
+		}
+		// skip to the next base and index position if the reference base is an N. TODO: better handling of non-ACTG bases in reference graphs
+		if base == 'N' {
+			distance++
+			continue
+		}
+		// increment the distance counter for each match
+		if base == (*read)[distance] {
+			distance++
+		// if no match but performing shuffled alignment, decrement the shuffle
+		} else if (len(path)== 0) && (shuffle > 0) {
+				shuffle--
+				continue
+		// if no shuffle or shuffle is finished, terminate this DFS
+		} else {
+				return false
+		}
 	}
-
-	// if we have a consensus length that equals read length (==exact match), or there are no more nodes in the graph - end the DFS and report the alignment
+	// increment the path to include the segment that has just been matched
+	path = append(path, node.SegmentID)
+	// if we have a consensus length that equals read length (==exact match), or there are no more nodes in the graph - end the DFS and report the alignment path
 	if distance == readLength || len(node.OutEdges) == 0 {
 		pathCopy := make([]int, len(path))
 		for i, j := range path {
@@ -171,16 +168,15 @@ func DFSrecursive(node *graph.Node, graph *graph.Graph, read *[]byte, distance i
 		sendPath <- pathCopy
 		return true
 	}
-
 	// continue along the current traversal by trying to build the consensus using neighbouring nodes
 	for _, neighbourNode := range node.OutEdges {
 		// get the node from the sorted graph using the lookup
-		nodeLookup, ok := graph.NodeLookUp[neighbourNode]
+		NodeLookup, ok := graph.NodeLookup[neighbourNode]
 		if !ok {
 			misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
 		}
 		// call the DFS func again
-		if result := DFSrecursive(&graph.SortedNodes[nodeLookup], graph, read, distance, path, sendPath, readLength); result == true {
+		if result := DFSrecursive(graph.SortedNodes[NodeLookup], graph, read, distance, path, sendPath, readLength, 0, shuffle); result == true {
 			aligned = true
 		}
 	}
@@ -189,10 +185,12 @@ func DFSrecursive(node *graph.Node, graph *graph.Graph, read *[]byte, distance i
 
 /*
   A function to report a graph traversal relative to a linear reference sequence
+
+  it receives a path(s) (the nodes which were traversed during a successful alignment) and evaluates the parent sequences for each node
+  it returns the ID of the most frequently occurring parent sequence, plus the start position of the alignment, relative to the linear reference sequence of the parent(s)
+  it also updates the grootGraph to record the aligned read
 */
-// it receives a path(s) (the nodes which were traversed during a successful alignment) and evaluates the parent sequences for each node
-// it returns the ID of the most frequently occurring parent sequence, plus the start position of the alignment, relative to the linear reference sequence of the parent(s)
-func processTraversal(graph *graph.Graph, paths [][]int) ([]int, map[int]int) {
+func processTraversal(graph *graph.GrootGraph, paths [][]int, offset int) ([]int, map[int]int) {
 	IDassignments := []int{}
 	startPositions := make(map[int]int)
 	// process one or more paths and combine the results
@@ -204,22 +202,24 @@ func processTraversal(graph *graph.Graph, paths [][]int) ([]int, map[int]int) {
 		// move along the alignment path
 		for i := 0; i < pathLength; i++ {
 			// lookup the position of the nodeID in the graph and get the full node info
-			nodeLookup, ok := graph.NodeLookUp[paths[pathIterator][i]]
+			NodeLookup, ok := graph.NodeLookup[paths[pathIterator][i]]
 			if !ok {
 				misc.ErrorCheck(fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed"))
 			}
-			node := graph.SortedNodes[nodeLookup]
+			// record the alignment against this node
+			graph.SortedNodes[NodeLookup].IncrementReadCount()
 			// tally the parent IDs of this node
-			for _, id := range node.Parent {
+			node := graph.SortedNodes[NodeLookup]
+			for _, id := range node.PathIDs {
 				if _, ok := nodeIDs[id]; ok {
 					nodeIDs[id]++
 				} else {
 					nodeIDs[id] = 1
 				}
-			}
-			// if this is the starting node of the alignment, grab the start position (relative to reference sequence(s))
-			if i == 0 {
-				startPos = node.Position
+				// if this is the starting node of the alignment, grab the start position (relative to reference sequence(s))
+				if i == 0 {
+					startPos[id] = node.Position[id] + offset
+				}
 			}
 		}
 		// assign reference to traversal (only reference IDs that are present in each node of the traversal are used)

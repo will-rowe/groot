@@ -16,7 +16,7 @@
 #
 
 # test parameters
-THREADS=8
+THREADS=1
 READ_LEN=150
 K_SIZE=7
 SIG_SIZE=128

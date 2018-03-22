@@ -23,13 +23,14 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/reporting"
-	"log"
-	"os"
-	"runtime"
-	"strings"
+	"github.com/will-rowe/groot/src/version"
 )
 
 // the command line arguments
@@ -99,26 +100,18 @@ func reportParamCheck() error {
 	if *covCutoff > 1.0 {
 		return fmt.Errorf("supplied coverage cutoff exceeds 1.0 (100%): %v", *covCutoff)
 	}
-	// set number of processors to use
-	if *proc <= 0 || *proc > runtime.NumCPU() {
-		*proc = runtime.NumCPU()
-	}
-	runtime.GOMAXPROCS(*proc)
 	return nil
 }
 
 /*
-  The main function for the align sub-command
+  The main function for the report sub-command
 */
 func runReport() {
-	// set up logging
-	logFH, err := os.OpenFile("groot-report.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
+	logFH := misc.StartLogging(*logFile)
 	defer logFH.Close()
 	log.SetOutput(logFH)
-	log.Printf("starting the report command")
+	log.Printf("i am groot (version %s)", version.VERSION)
+	log.Printf("starting the report subcommand")
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
 	misc.ErrorCheck(reportParamCheck())

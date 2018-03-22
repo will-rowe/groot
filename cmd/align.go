@@ -27,6 +27,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
@@ -34,6 +35,7 @@ import (
 	"github.com/will-rowe/groot/src/lshForest"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/stream"
+	"github.com/will-rowe/groot/src/version"
 )
 
 // the command line arguments
@@ -44,6 +46,8 @@ var (
 	clip       *int      // maximum number of clipped bases allowed during local alignment
 	indexDir   *string   // directory containing the index files
 	fastq      *[]string // list of FASTQ files to align
+	graphDir        *string  // directory to save gfa graphs to
+	defaultGraphDir = "./groot-graphs-" + string(time.Now().Format("20060102150405")) // a default graphDir
 )
 
 // the align command (used by cobra)
@@ -67,6 +71,7 @@ func init() {
 	clip = alignCmd.Flags().IntP("clip", "c", 5, "maximum number of clipped bases allowed during local alignment")
 	indexDir = alignCmd.Flags().StringP("indexDir", "i", "", "directory containing the index files")
 	fastq = alignCmd.Flags().StringSliceP("fastq", "f", []string{}, "FASTQ file(s) to align")
+	graphDir = alignCmd.PersistentFlags().StringP("graphDir", "o", defaultGraphDir, "directory to save variation graphs to")
 }
 
 /*
@@ -126,6 +131,17 @@ func alignParamCheck() error {
 			}
 		}
 	}
+	info := new(misc.IndexInfo)
+	misc.ErrorCheck(info.Load(*indexDir + "/index.info"))
+	if info.Version != version.VERSION {
+		return fmt.Errorf("the groot index was created with a different version of groot (you are currently using version %v)", version.VERSION)
+	}
+	// setup the graphDir
+	if _, err := os.Stat(*graphDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(*graphDir, 0700); err != nil {
+			return fmt.Errorf("can't create specified output directory")
+		}
+	}
 	// set number of processors to use
 	if *proc <= 0 || *proc > runtime.NumCPU() {
 		*proc = runtime.NumCPU()
@@ -138,19 +154,17 @@ func alignParamCheck() error {
   The main function for the align sub-command
 */
 func runAlign() {
-	// set up logging
-	logFH, err := os.OpenFile("groot-align.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer logFH.Close()
-	log.SetOutput(logFH)
 	// set up profiling
 	if *profiling == true {
 		//defer profile.Start(profile.MemProfile, profile.ProfilePath("./")).Stop()
 		defer profile.Start(profile.ProfilePath("./")).Stop()
 	}
-	log.Printf("starting the align command")
+	// start logging
+	logFH := misc.StartLogging(*logFile)
+	defer logFH.Close()
+	log.SetOutput(logFH)
+	log.Printf("i am groot (version %s)", version.VERSION)
+	log.Printf("starting the align subcommand")
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
 	misc.ErrorCheck(alignParamCheck())
@@ -173,7 +187,7 @@ func runAlign() {
 	log.Printf("\tsignature size: %d\n", info.SigSize)
 	log.Printf("\tJaccard similarity theshold: %0.2f\n", info.JSthresh)
 	log.Printf("\twindow sized used in indexing: %d\n", info.ReadLength)
-	log.Print("loading the variation graphs...")
+	log.Print("loading the groot graphs...")
 	graphStore := make(graph.GraphStore)
 	misc.ErrorCheck(graphStore.Load(*indexDir + "/index.graph"))
 	log.Printf("\tnumber of variation graphs: %d\n", len(graphStore))
@@ -184,7 +198,7 @@ func runAlign() {
 	numHF, numBucks := database.Settings()
 	log.Printf("\tnumber of hash functions per bucket: %d\n", numHF)
 	log.Printf("\tnumber of buckets: %d\n", numBucks)
-
+	///////////////////////////////////////////////////////////////////////////////////////
 	// create SAM references from the sequences held in the graphs
 	referenceMap, err := graphStore.GetRefs()
 	misc.ErrorCheck(err)
@@ -193,7 +207,7 @@ func runAlign() {
 	log.Printf("initialising alignment pipeline...")
 	pipeline := stream.NewPipeline()
 
-	// Init processes
+	// initialise processes
 	log.Printf("\tinitialising the processes")
 	dataStream := stream.NewDataStreamer()
 	fastqHandler := stream.NewFastqHandler()
@@ -205,12 +219,6 @@ func runAlign() {
 	// add in the process parameters
 	dataStream.InputFile = *fastq
 	fastqChecker.WindowSize = info.ReadLength
-	/* trying the trimming post-seeding for now...
-	if *trimSwitch {
-		fastqChecker.MinReadLength = *minRL
-		fastqChecker.MinQual = *minQual
-	}
-	*/
 	dbQuerier.Db = database
 	dbQuerier.CommandInfo = info
 	dbQuerier.GraphStore = graphStore
@@ -223,7 +231,7 @@ func runAlign() {
 	}
 	samWriter.RefMap = referenceMap
 
-	// Arrange pipeline processes
+	// arrange pipeline processes
 	log.Printf("\tconnecting data streams")
 	fastqHandler.Input = dataStream.Output
 	fastqChecker.Input = fastqHandler.Output
@@ -235,5 +243,15 @@ func runAlign() {
 	pipeline.AddProcesses(dataStream, fastqHandler, fastqChecker, dbQuerier, graphAligner, samWriter)
 	log.Printf("\tnumber of processes added to the alignment pipeline: %d\n", len(pipeline.Processes))
 	pipeline.Run()
+
+	// save the graph files
+	log.Printf("saving graphs to \"%v\"...", *graphDir)
+	counter := 0
+	for _, graph := range graphStore {
+		graphWritten, err := graph.DumpGraph(*graphDir)
+		misc.ErrorCheck(err)
+		counter += graphWritten
+	}
+	log.Printf("\tnumber of graphs that had reads align: %d\n", counter)
 	log.Println("finished")
-} // end of align main function
+}

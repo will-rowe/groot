@@ -9,6 +9,7 @@
     <a href="https://zenodo.org/badge/latestdoi/117543539"><img src="https://zenodo.org/badge/117543539.svg" alt="DOI"></a>
     <a href="https://gitter.im/groot-help/Lobby"><img src="https://img.shields.io/badge/chat-gitter-8A2BE2.svg" alt="bioconda"></a>
     <a href="https://bioconda.github.io/recipes/groot/README.html"><img src="https://anaconda.org/bioconda/groot/badges/downloads.svg" alt="bioconda"></a>
+    <a href="https://media.giphy.com/media/3o7budMRwZvNGJ3pyE/giphy.gif"><img src="https://img.shields.io/badge/i%20am-groot-green.svg" alt="bioconda"></a>
 </div>
 
 ***
