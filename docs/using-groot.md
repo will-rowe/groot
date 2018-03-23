@@ -1,8 +1,10 @@
 # Using GROOT
 
-GROOT uses a subcommand syntax; call the main program with `groot` and follow it by the subcommand to indicate what  action to take.
+**GROOT** uses a subcommand syntax; call the main program with `groot` and follow it by the subcommand to indicate what  action to take.
 
 This page will cover a worked example, details on the available GROOT commands and some tips for using the program.
+
+For more information on the graphs that **GROOT** uses, please read the  [groot-graphs](/groot-graphs.html) page.
 
 ***
 
@@ -55,14 +57,10 @@ The following databases are available:
 * arg-annot (default)
 * resfinder
 * card
+* groot-db
+* groot-core-db
 
-These databases were clustered by sequence identity and stored as **Multiple Sequence Alignments** (MSAs). They were clustered using the following commands:
-
-```
-vsearch --cluster_size ARGs.fna --id 0.90 --msaout MSA.tmp
-
-awk '!a[$0]++ {of="./cluster-" ++fc ".msa"; print $0 >> of ; close(of)}' RS= ORS="\n\n" MSA.tmp && rm MSA.tmp
-```
+These databases were clustered by sequence identity and stored as **Multiple Sequence Alignments** (MSAs). See [groot-databases](groot-databases.html) for more info.
 
 ### index
 
@@ -88,7 +86,8 @@ Some more flags that can be used:
 * ``-j``: Jaccard similarity threshold for seeding a read (used to calibrate LSH Forest index)
 * ``-k``: size of k-mer to use for MinHashing
 * ``-s``: length of MinHash signature
-* ``-w``: offset to use when moving window along graph traversals (i.e. distance between MinHash signatures)
+
+> Important: GROOT can only accept MSAs as input. You can cluster your own database or use `groot get` to obtain a pre-clustered one.
 
 ### align
 
@@ -98,7 +97,7 @@ The ``align`` subcommand is used to align reads against the indexed variation gr
 groot align -i groot-index -f file.fastq -p 8 > ARG-reads.bam
 ```
 
-The above command will seed the fastq reads against the indexed variation graphs. It will then perform a hierarchical local alignment of each seed against the variation graph traversals. The output alignment is essentially the ARG classified reads (which may be useful) and can then be used to report full-length ARGs (using the report subcommand).
+The above command will seed the fastq reads against the indexed variation graphs. It will then perform a hierarchical local alignment of each seed against the variation graph traversals. The output alignment is essentially the ARG classified reads (which may be useful) and can then be used to report full-length ARGs (using the `report` subcommand).
 
 Flags explained:
 
@@ -121,6 +120,7 @@ Some more flags that can be used:
 * ``-q``: minimum base quality during trimming
 * ``-l``: minimum read length post trimming
 * ``-c``: maximum number of bases to clip from 3' end during local alignment
+* ``-o``: directory to save variation graphs to
 
 ### report
 
@@ -139,8 +139,6 @@ Some more flags that can be used:
 
 * ``--lowCov``: overrides `c` option and will report ARGs which may not be covered at the 5'/3' ends
 * ``--plotCov``: outputs coverage plot for each ARG reported
-
-More info to follow...
 
 ***
 

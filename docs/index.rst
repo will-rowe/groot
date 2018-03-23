@@ -28,4 +28,6 @@ Contents
    :maxdepth: 2
 
    using-groot
+   groot-graphs
+   groot-databases
    tutorial

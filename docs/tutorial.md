@@ -1,6 +1,6 @@
 # Tutorial
 
-This tutorial is intended to show you how to use `GROOT` to identify Antimicrobial Resistance Genes (ARGs) and generate resistome profiles as part of a metagenome analysis workflow.
+This tutorial is intended to show you how to use **GROOT** to identify Antimicrobial Resistance Genes (**ARGs**) and generate resistome profiles as part of a metagenome analysis workflow.
 
 ***
 
