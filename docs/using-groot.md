@@ -4,7 +4,7 @@
 
 This page will cover a worked example, details on the available GROOT commands and some tips for using the program.
 
-For more information on the graphs that **GROOT** uses, please read the  [groot-graphs](/groot-graphs.html) page.
+For more information on the graphs that **GROOT** uses, please read the [groot-graphs](https://groot-documentation.readthedocs.io/en/latest/groot-graphs.html) page.
 
 ***
 
@@ -60,7 +60,7 @@ The following databases are available:
 * groot-db
 * groot-core-db
 
-These databases were clustered by sequence identity and stored as **Multiple Sequence Alignments** (MSAs). See [groot-databases](groot-databases.html) for more info.
+These databases were clustered by sequence identity and stored as **Multiple Sequence Alignments** (MSAs). See [groot-databases](https://groot-documentation.readthedocs.io/en/latest/groot-databases.html) for more info.
 
 ### index
 

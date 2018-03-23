@@ -6,7 +6,7 @@ This is a brief overview of the databases used by **GROOT**.
 
 ## Overview
 
-As mentioned on the [groot-graphs](/groot-graphs.html) page, **GROOT** creates variation graphs from [Multiple Sequence Alignments](https://en.wikipedia.org/wiki/Multiple_sequence_alignment) (**MSAs**) and stores them as `groot graphs`.
+As mentioned on the [groot-graphs](https://groot-documentation.readthedocs.io/en/latest/groot-graphs.html) page, **GROOT** creates variation graphs from [Multiple Sequence Alignments](https://en.wikipedia.org/wiki/Multiple_sequence_alignment) (**MSAs**) and stores them as `groot graphs`.
 
 The **MSAs** represent a clustered database, each cluster is a collection of sequences which share high nucleotide identity. **GROOT** reads in each **MSA** file and converts it to a graph.
 
