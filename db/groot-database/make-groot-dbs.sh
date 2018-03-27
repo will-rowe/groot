@@ -62,7 +62,7 @@ cd ..
 # Create the groot-core-db
 mkdir groot-core-db.90 && cd $_
 cat ../*.fna > all-args.fasta
-vsearch --cluster_size ../all-args.fasta --id 1 --msaout MSA.tmp
+vsearch --cluster_size ../all-args.fasta --id 0.99 --msaout MSA.tmp
 awk '!a[$0]++ {of="./cluster-" ++fc ".msa"; print $0 >> of ; close(of)}' RS= ORS="\n\n" MSA.tmp && rm MSA.tmp
 for i in *.msa
 do

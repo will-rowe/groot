@@ -4,10 +4,10 @@
 go build
 
 # download the database
-./groot get -d arg-annot
+./groot get -d groot-core-db
 
 # index the example
-./groot index -p 1 -i ./arg-annot.90 -o test-index
+./groot index -p 1 -i ./groot-core-db.90 -o test-index
 
 # align the test reads
 ./groot align -p 1 -i test-index -f testing/full-argannot-perfect-reads-small.fq.gz > out.bam

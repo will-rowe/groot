@@ -41,7 +41,7 @@ var md5sums = map[string]string{
 	"resfinder.90":     "de34ab790693cb7c7b656d537ec40f05",
 	"card.90":          "3e8a7b56fb7ce1c857299decac2d71c2",
 	"groot-db.90":      "2cbbe9a89c2ce23c09575198832250d3",
-	"groot-core-db.90": "93e09c4b93310f4b54f9ef11c5e2d42b",
+	"groot-core-db.90": "f3cac49ff44624a26ea2d92171a73174",
 }
 
 // url to download databases from
