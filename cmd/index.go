@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/gfa"
+	"github.com/biogo/biogo/seq/multi"
 	"github.com/will-rowe/groot/src/graph"
 	"github.com/will-rowe/groot/src/lshForest"
 	"github.com/will-rowe/groot/src/misc"
@@ -141,13 +142,13 @@ func runIndex() {
 	// process each msa in a go routine
 	var wg sync.WaitGroup
 	graphChan := make(chan *graph.GrootGraph)
-	for i, msa := range msaList {
+	for i, msaFile := range msaList {
+		// load the MSA outside of the go-routine to prevent 'too many open files' error on OSX
+		msa, err := gfa.ReadMSA(msaFile)
+		misc.ErrorCheck(err)
 		wg.Add(1)
-		go func(msaID int, msaFile string) {
+		go func(msaID int, msa *multi.Multi) {
 			defer wg.Done()
-			// load the MSA
-			msa, err := gfa.ReadMSA(msaFile)
-			misc.ErrorCheck(err)
 			// convert the MSA to a GFA instance
 			newGFA, err := gfa.MSA2GFA(msa)
 			misc.ErrorCheck(err)

@@ -1,7 +1,11 @@
 sudo: required
 dist: precise
-language: go
 
+os:
+    - linux
+    - osx
+
+language: go
 go:
  - 1.9
 

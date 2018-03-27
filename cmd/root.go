@@ -71,6 +71,6 @@ func Execute() {
 */
 func init() {
 	proc = RootCmd.PersistentFlags().IntP("processors", "p", 1, "number of processors to use")
-	logFile = indexCmd.Flags().StringP("logFile", "y", defaultLogFile, "filename for log file")
+	logFile = RootCmd.PersistentFlags().StringP("logFile", "y", defaultLogFile, "filename for log file")
 	profiling = RootCmd.PersistentFlags().Bool("profiling", false, "create the files needed to profile GROOT using the go tool pprof")
 }
