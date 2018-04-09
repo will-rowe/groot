@@ -51,7 +51,8 @@ var RootCmd = &cobra.Command{
  alignment of classified reads against graph traversals facilitates accurate reconstruction
  of full-length gene sequences using a simple scoring scheme.
 
- GROOT can output an ARG alignment file, as well as a typing report.`,
+ GROOT can output an ARG alignment file, as well as a typing report and the variation graphs
+ with aligned reads.`,
 }
 
 /*

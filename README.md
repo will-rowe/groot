@@ -20,7 +20,7 @@
 
 `GROOT` will output an ARG alignment file (in BAM format) that contains the graph traversals possible for each query read; the alignment file is then used by `GROOT` to generate a resistome profile.
 
-Since version 0.4, `GROOT` will also output the variation graphs which had reads align. These graphs are in [GFA format](https://github.com/GFA-spec/GFA-spec), allowing you to visualise graph alignments using [Bandage](https://github.com/rrwick/Bandage) and determine which variants of a given ARG type are dominant in your metagenomes. Read the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more info. 
+Since version 0.4, `GROOT` will also output the variation graphs which had reads align. These graphs are in [GFA format](https://github.com/GFA-spec/GFA-spec), allowing you to visualise graph alignments using [Bandage](https://github.com/rrwick/Bandage) and determine which variants of a given ARG type are dominant in your metagenomes. Read the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more info.
 
 ## Installation
 
@@ -45,6 +45,9 @@ git clone https://github.com/will-rowe/groot.git
 # Go into the repository and get the package dependencies
 cd groot
 go get -d -t -v ./...
+
+# Run the unit tests
+go test -v ./...
 
 # Compile the program
 go build ./
