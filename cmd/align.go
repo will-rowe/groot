@@ -58,20 +58,24 @@ var alignCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		runAlign()
 	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return misc.CheckRequiredFlags(cmd.Flags())
+	},
 }
 
 /*
   A function to initialise the command line arguments
 */
 func init() {
-	RootCmd.AddCommand(alignCmd)
 	trimSwitch = alignCmd.Flags().Bool("trim", false, "enable quality based trimming of reads (post seeding)")
 	minQual = alignCmd.Flags().IntP("minQual", "q", 20, "minimum base quality (used in quality based trimming)")
 	minRL = alignCmd.Flags().IntP("minRL", "l", 100, "minimum read length (evaluated post trimming)")
 	clip = alignCmd.Flags().IntP("clip", "c", 5, "maximum number of clipped bases allowed during local alignment")
-	indexDir = alignCmd.Flags().StringP("indexDir", "i", "", "directory containing the index files")
+	indexDir = alignCmd.Flags().StringP("indexDir", "i", "", "directory containing the index files - required")
 	fastq = alignCmd.Flags().StringSliceP("fastq", "f", []string{}, "FASTQ file(s) to align")
 	graphDir = alignCmd.PersistentFlags().StringP("graphDir", "o", defaultGraphDir, "directory to save variation graphs to")
+	alignCmd.MarkFlagRequired("indexDir")
+	RootCmd.AddCommand(alignCmd)
 }
 
 /*

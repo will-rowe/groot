@@ -30,10 +30,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/biogo/biogo/seq/multi"
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/gfa"
-	"github.com/biogo/biogo/seq/multi"
 	"github.com/will-rowe/groot/src/graph"
 	"github.com/will-rowe/groot/src/lshForest"
 	"github.com/will-rowe/groot/src/misc"
@@ -61,17 +61,21 @@ var indexCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		runIndex()
 	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return misc.CheckRequiredFlags(cmd.Flags())
+	},
 }
 
 // a function to initialise the command line arguments
 func init() {
-	RootCmd.AddCommand(indexCmd)
 	kSize = indexCmd.Flags().IntP("kmerSize", "k", 7, "size of k-mer")
 	sigSize = indexCmd.Flags().IntP("sigSize", "s", 128, "size of MinHash signature")
 	readLength = indexCmd.Flags().IntP("readLength", "l", 100, "length of query reads (which will be aligned during the align subcommand)")
 	jsThresh = indexCmd.Flags().Float64P("jsThresh", "j", 0.99, "minimum Jaccard similarity for a seed to be recorded")
-	msaDir = indexCmd.Flags().StringP("msaDir", "i", "", "directory containing the clustered references (MSA files)")
+	msaDir = indexCmd.Flags().StringP("msaDir", "i", "", "directory containing the clustered references (MSA files) - required")
 	outDir = indexCmd.PersistentFlags().StringP("outDir", "o", defaultOutDir, "directory to save index files to")
+	indexCmd.MarkFlagRequired("msaDir")
+	RootCmd.AddCommand(indexCmd)
 }
 
 //  a function to check user supplied parameters

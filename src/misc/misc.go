@@ -4,9 +4,13 @@ package misc
 import (
 	"encoding/binary"
 	"encoding/gob"
+	"errors"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // a function to throw error to the log and exit the program
@@ -14,6 +18,32 @@ func ErrorCheck(msg error) {
 	if msg != nil {
 		log.Fatal("encountered error: ", msg)
 	}
+}
+
+// a function to check for required flags
+func CheckRequiredFlags(flags *pflag.FlagSet) error {
+	requiredError := false
+	flagName := ""
+
+	flags.VisitAll(func(flag *pflag.Flag) {
+		requiredAnnotation := flag.Annotations[cobra.BashCompOneRequiredFlag]
+		if len(requiredAnnotation) == 0 {
+			return
+		}
+
+		flagRequired := requiredAnnotation[0] == "true"
+
+		if flagRequired && !flag.Changed {
+			requiredError = true
+			flagName = flag.Name
+		}
+	})
+
+	if requiredError {
+		return errors.New("Required flag `" + flagName + "` has not been set")
+	}
+
+	return nil
 }
 
 // StartLogging is a function to start the log...
