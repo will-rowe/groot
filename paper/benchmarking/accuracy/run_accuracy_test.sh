@@ -6,7 +6,7 @@
 # cat test-read-set-sizes | parallel --gnu "sh run_accuracy_test.sh {}"
 #
 # combine the usage outputs into a single tsv:
-# printf "CPU usage:\ttime (wall clock seconds)\n" > usage-data.tsv
+# printf "CPU usage:\ttime (wall clock seconds)\tResident Set Size (kb)\n" > usage-data.tsv
 # cat usage-for* >> usage-data.tsv && rm usage-for*
 #
 # Requires:
@@ -16,7 +16,7 @@
 #
 
 # test parameters
-THREADS=1
+THREADS=8
 READ_LEN=150
 K_SIZE=7
 SIG_SIZE=128
@@ -41,11 +41,11 @@ go build ../accuracy-test.go
 
 # index the ARGannot database
 echo "indexing the ARG-annot database..."
-gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" ./groot index -i ./arg-annot.90 -o groot-index -l $READ_LEN -k $K_SIZE -s $SIG_SIZE -j $JS -p $THREADS
+gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" ./groot index -i ./arg-annot.90 -o index -l $READ_LEN -k $K_SIZE -s $SIG_SIZE -j $JS -p $THREADS
 
 # align the test reads
 echo "aligning reads..."
-gtime -o  ../usage-for-${NUM_READS}-reads.tsv -f "%P\t%e\n" ./groot align -i groot-index -f ${NUM_READS}-test-reads.fq -p $THREADS > groot.bam
+gtime -o  ../usage-for-${NUM_READS}-reads.tsv -f "%P\t%e\t%M\n" ./groot align -i index -f ${NUM_READS}-test-reads.fq -p $THREADS > groot.bam
 
 # evaluate accuracy
 echo "evaluating accuracy..."

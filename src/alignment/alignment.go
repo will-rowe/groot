@@ -33,7 +33,7 @@ func Align(read seqio.FASTQread, seedID int, graph *graph.GrootGraph, refs []*sa
 		IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, offset, 0)
 		// if unsuccessful then try shuffling the seed forward
 		if len(IDs) == 0 {
-			shuffles := 5
+			shuffles := 10
 			for shuffles > 0 {
 				IDs, startPos = performAlignment(NodeLookup, &read.Seq, graph, offset, shuffles)
 				if len(IDs) != 0 {

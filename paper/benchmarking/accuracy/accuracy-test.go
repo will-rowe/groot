@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -69,8 +68,8 @@ func main() {
 		match := false
 		// get the base range of the read
 		splitReadName := strings.Split(read, "_argannot")
-		splitReadName2 := strings.Split(splitReadName[0], "_")
-		readPos := splitReadName2[len(splitReadName2)-1]
+		//splitReadName2 := strings.Split(splitReadName[0], "_")
+		//readPos := splitReadName2[len(splitReadName2)-1]
 		// clean the read ID so it matches the reference ID
 		readID := "argannot" + splitReadName[1]
 		// make sure there is no whitespace in ID
@@ -86,12 +85,7 @@ func main() {
 			if ref != readID {
 				fPos++
 			} else {
-				// see if the bases positions match
-				if readPos != strconv.Itoa(hit.Pos) {
-					fPos++
-				} else {
-					match = true
-				}
+				match = true
 			}
 		}
 		// record if this read has been correctly aligned
