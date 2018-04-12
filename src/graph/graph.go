@@ -231,7 +231,7 @@ func (graph *GrootGraph) WindowGraph(windowSize, kSize, sigSize int) <-chan *Win
 		// for each reference in the graph, get all the windows possible from every base in every node
 		for pathID := range graph.Paths {
 			for _, node := range graph.SortedNodes {
-				for offset := 0; offset <= len(node.Sequence); offset++ {
+				for offset := 0; offset < len(node.Sequence); offset++ {
 					var wg sync.WaitGroup
 					sendPath := make(chan []byte)
 					// launch the DFS
@@ -400,8 +400,14 @@ func (graph *GrootGraph) DumpGraph(dirName string) (int, error) {
 		path.Add(newGFA)
 	}
 	// create a gfaWriter and write the GFA instance
-	firstSeqID := string(bytes.Replace(graph.Paths[0], []byte("/"), []byte(""), -1))
-	fileName := fmt.Sprintf("%v/%s-groot-graph.gfa", dirName, firstSeqID)
+	firstSeqID := graph.Paths[0]
+	if bytes.Contains(firstSeqID, []byte("/")) {
+		firstSeqID = bytes.Replace(firstSeqID, []byte("/"), []byte(""), -1)
+	}
+	if bytes.Contains(firstSeqID, []byte(":")) {
+		firstSeqID = bytes.Replace(firstSeqID, []byte(":"), []byte(""), -1)
+	}
+	fileName := fmt.Sprintf("%v/%v-groot-graph.gfa", dirName, string(firstSeqID))
 	outfile, err := os.Create(fileName)
 	if err != nil {
 		return 0, err

@@ -332,12 +332,6 @@ func (proc *Aligner) Run() {
 			}
 			// try alignment on all the seeds
 			for i := 0; i < len(read.Seeds); i++ {
-				// skip a seed if it is for a graph that has already been aligned to by this read and if it is within 5 nodes of the previous alignment
-				if prevSeedNode, ok := seededGraphs[read.Seeds[i].GraphID]; ok {
-					if (read.Seeds[i].Node > (prevSeedNode - 5)) && (read.Seeds[i].Node < (prevSeedNode + 5)) {
-						continue
-					}
-				}
 				// if the seed required RC of read, make sure the read is in the right complement orientation
 				if read.RC != read.Seeds[i].RC {
 					read.RevComplement()
