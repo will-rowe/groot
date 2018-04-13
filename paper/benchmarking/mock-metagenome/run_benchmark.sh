@@ -15,7 +15,11 @@
 # bioawk (conda install bioawk)
 # BBMap
 # Go 1.9
+# Perl
 # gtime (brew install gnu-time)
+# git
+# Nextflow (for amr-plusplus)
+# Docker (for amr-plusplus)
 
 # test parameters
 COVERAGE=$1
@@ -54,13 +58,11 @@ echo "creating artificial metagenome..."
 tail -n +1 *.fna > genomes.fna
 sed '/^==>/ d' < genomes.fna > ../groot-reference-data.fna
 cd ..
-randomreads.sh ref=groot-reference-data.fna len=${READ_LEN} out=groot-reads.fq metagenome=true coverage=${COVERAGE} adderrors=true maxsnps=0 maxinss=0 maxdels=0 maxsubs=0 > /dev/null 2>&1
-wget http://kirill-kryukov.com/study/tools/fastq-splitter/fastq-splitter-0.1.2.zip
-unzip fastq-splitter-0.1.2.zip
-perl fastq-splitter.pl --n 2 groot-reads.fq
-mv groot-reads.fq.part-1 groot-reads_1.fq
-mv groot-reads.fq.part-2 groot-reads_2.fq
-rm groot-reads.fq fastq-split*
+randomreads.sh ref=groot-reference-data.fna len=$((${READ_LEN} * 2)) out=groot-reads.fq metagenome=true coverage=${COVERAGE} adderrors=true maxsnps=0 maxinss=0 maxdels=0 maxsubs=0 > /dev/null 2>&1
+perl ../splitFASTQ.pl groot-reads.fq
+mv groot-reads.fq_1 groot-reads_1.fq
+mv groot-reads.fq_2 groot-reads_2.fq
+rm groot-reads.fq
 
 # install GROOT
 echo "installing GROOT..."
@@ -106,6 +108,12 @@ mkdir ../argOAP-upload
 mv argsOAP-output/extracted.fa ../argOAP-upload/ && mv argsOAP-output/meta_data_online.txt ../argOAP-upload/
 cd ..
 echo "argsOAP stage 1 finished - upload the 2 files in the 'argOAP-upload' directory to http://smile.hku.hk/SARGs and run argsOAP stage 2"
+
+# run AMRplusplus
+echo "running AMRplusplus..."
+git clone https://github.com/cdeanj/amrplusplus ./amrplusplus && cd amrplusplus
+nextflow run main.nf --reads "../groot*{1,2}.fq" --amr ../../../../../db/full-ARG-databases/card/card-1.1.2.fna --output ../amrplusplus-results -profile docker --threads $THREADS --threshold 100
+echo "AMRplusplus finished - results are in 'amrplusplus-results'"
 
 # clean up
 grep ">" source_genomes/randomARGs.fna > ./spiked-ARGS.fna

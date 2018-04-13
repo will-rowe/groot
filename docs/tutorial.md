@@ -25,7 +25,7 @@ The aims are:
 Use conda to set up an environment with all the software we need for this tutorial:
 
 ```
-conda create -n grootTutorial -c bioconda parallel==20171222 sra-tools==2.8 fastqc==0.11.7 bbmap==37.90 multiqc==1.4 groot==0.3 seqkit==0.7.2 samtools==1.4 metacherchant==0.1.0
+conda create -n grootTutorial -c bioconda parallel==20171222 sra-tools==2.8 fastqc==0.11.7 bbmap==37.90 multiqc==1.4 groot==0.7 seqkit==0.7.2 samtools==1.4 metacherchant==0.1.0
 source activate grootTutorial
 ```
 
@@ -123,7 +123,7 @@ Download the pre-clustered [ARG-ANNOT](http://en.mediterranee-infection.com/arti
 groot get -d arg-annot
 ```
 
-Index the ARG-ANNOT database:
+Index the database:
 
 ``` bash
 groot index -i arg-annot.90 -o groot-index -l 100 -p 8
@@ -136,11 +136,12 @@ groot index -i arg-annot.90 -o groot-index -l 100 -p 8
 Align the reads against the index:
 
 ``` bash
-ls *.fastq | parallel --gnu "groot align -i groot-index -f {} -p 8 > {/.}.bam"
+ls *.fastq | parallel --gnu "groot align -i groot-index -f {} -p 8 -o {/.}-groot-graphs > {/.}.bam"
 ```
 
 * for each sample, the align subcommand produces a BAM file containing all graph traversals for each read
 * each BAM file essentially contains the ARG-derived reads in each sample
+* the graphs (`.gfa`) which had reads align are stored in a separate directory for each sample (`-o {/.}-groot-graphs`)
 
 ### 4.a. Compare ARG diversity
 
