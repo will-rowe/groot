@@ -30,9 +30,9 @@ copyright = '2018, Will Rowe'
 author = 'Will Rowe'
 
 # The short X.Y version
-version = '0.4'
+version = '0.7'
 # The full version, including alpha/beta/rc tags
-release = '0.4'
+release = '0.7'
 
 
 # -- General configuration ---------------------------------------------------
