@@ -156,36 +156,45 @@ func runGet() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
 	// download the db
 	fmt.Printf("downloading the pre-clustered %v database...\n", *database)
-	dbFile := fmt.Sprintf("%v.%v.tar", *database, *identity)
-	dbUrl += dbFile
-	dbSave := fmt.Sprintf("%v/%v", *dbDir, dbFile)
-	if err := DownloadFile(dbSave, dbUrl); err != nil {
+	dbName := fmt.Sprintf("%v.%v", *database, *identity)
+	dbUrl += dbName
+	dbUrl += ".tar"
+	if err := DownloadFile("tmp.tar", dbUrl); err != nil {
 		fmt.Println("could not download the tarball")
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	// unpack the db
 	fmt.Println("unpacking...")
-	if err := getMD5(dbSave); err != nil {
+	if err := getMD5("tmp.tar"); err != nil {
 		fmt.Println("could not unpack the tarball")
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	if err := archiver.Tar.Open(dbSave, *dbDir); err != nil {
+	if err := archiver.Tar.Open("tmp.tar", "tmp"); err != nil {
 		fmt.Println("could not unpack the tarball")
 		fmt.Println(err)
+		os.Exit(1)
+	}
+	tmpDb := fmt.Sprintf("tmp/%v", dbName)
+	dbSave := fmt.Sprintf("%v/%v.%v", *dbDir, *database, *identity)
+	if err := os.Rename(tmpDb, dbSave); err != nil {
+		fmt.Println("could not save db to specified directory")
 		os.Exit(1)
 	}
 	// finished
-	if err := os.Remove(dbSave); err != nil {
+	if err := os.Remove("tmp.tar"); err != nil {
 		fmt.Println("could not cleanup...")
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	dbSave = fmt.Sprintf("%v/%v.%v", *dbDir, *database, *identity)
+        if err := os.Remove("tmp"); err != nil {
+                fmt.Println("could not cleanup...")
+                fmt.Println(err)
+                os.Exit(1)
+        }
 	fmt.Printf("database saved to: %v\n", dbSave)
 	fmt.Printf("now run `groot index -i %v` or `groot index --help` for full options\n", dbSave)
 }
