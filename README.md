@@ -78,6 +78,6 @@ groot align -i groot-index -f reads.fq | groot report
 
 Please [readthedocs](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more extensive documentation and a [tutorial](https://groot-documentation.readthedocs.io/en/latest/tutorial.html).
 
-We also have a preprint paper describing `GROOT`:
+`GROOT` has now been published in Bioinformatics:
 
-> [Rowe WPM, Winn MD. Indexed variation graphs for efficient and accurate resistome profiling. bioRxiv. 2018. doi: https://doi.org/10.1101/270835](https://doi.org/10.1101/270835)
+> [Rowe WPM, Winn MD. Indexed variation graphs for efficient and accurate resistome profiling. Bioinformatics. 2018. doi: bty387](https://doi.org/10.1093/bioinformatics/bty387)
