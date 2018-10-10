@@ -12,7 +12,7 @@ import (
 	"github.com/biogo/hts/sam"
 	"github.com/will-rowe/groot/src/alignment"
 	"github.com/will-rowe/groot/src/graph"
-	"github.com/will-rowe/groot/src/lshForest"
+	"github.com/will-rowe/groot/src/lshIndex"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/seqio"
 	"github.com/will-rowe/groot/src/version"
@@ -207,7 +207,7 @@ func (proc *FastqChecker) Run() {
 	log.Printf("\tmean read length: %.0f\n", meanRL)
 	// check the length is within +/-10 bases of the graph window
 	if meanRL < float64(proc.WindowSize-10) || meanRL > float64(proc.WindowSize+10) {
-		misc.ErrorCheck(fmt.Errorf("mean read length is outside the graph window size (+/- 10 bases)\n"))
+		misc.ErrorCheck(fmt.Errorf("read length is too variable (> +/- 10 bases of graph window size), try re-indexing using the --containment option\n"))
 	}
 }
 
@@ -218,9 +218,10 @@ type DbQuerier struct {
 	process
 	Input       chan seqio.FASTQread
 	Output      chan seqio.FASTQread
-	Db          *lshForest.LSHforest
+	Db          *lshIndex.LshEnsemble
 	CommandInfo *misc.IndexInfo
 	GraphStore  graph.GraphStore
+	Threshold	float64
 }
 
 func NewDbQuerier() *DbQuerier {
@@ -247,9 +248,11 @@ func (proc *DbQuerier) Run() {
 				}
 				// get signature for read
 				readMH := read.RunMinHash(proc.CommandInfo.Ksize, proc.CommandInfo.SigSize)
-				// query the LSH forest
-				for _, result := range proc.Db.Query(readMH.Signature()) {
-					seed := proc.Db.KeyLookup[result]
+				// query the LSH index
+				done := make(chan struct{})
+				defer close(done)
+				for result := range proc.Db.Query(readMH.Signature(), len(read.Seq), proc.Threshold, done) {
+					seed := proc.Db.KeyLookup[result.(string)]
 					seed.RC = read.RC
 					seeds = append(seeds, seed)
 				}
