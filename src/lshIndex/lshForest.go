@@ -208,4 +208,3 @@ func optimise(sigSize int, jsThresh float64) (int, int, float64, float64) {
 	}
 	return optimumNumHashFuncs, optimumNumBands, fp, fn
 }
-

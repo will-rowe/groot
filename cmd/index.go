@@ -205,66 +205,53 @@ func runIndex() {
 	}()
 	///////////////////////////////////////////////////////////////////////////////////////
 	// collect and store the GrootGraph windows
-	var sigStore = make([]map[int]map[int][][]uint64, len(graphStore))
-	for i := range sigStore {
-		sigStore[i] = make(map[int]map[int][][]uint64)
-	}
+	sigStore := []*lshIndex.GraphWindow{}
+	lookupMap := make(lshIndex.KeyLookupMap)
 	// receive the signatures
-	var sigCount int = 0
 	for window := range windowChan {
-		// initialise the inner map of sigStore if graph has not been seen yet
-		if _, ok := sigStore[window.GraphID][window.Node]; !ok {
-			sigStore[window.GraphID][window.Node] = make(map[int][][]uint64)
-		}
+		// combine graphID, nodeID and offset to form a string key for signature
+		stringKey := fmt.Sprintf("g%dn%do%d", window.GraphID, window.Node, window.OffSet)
+		// convert to a graph window
+		gw := &lshIndex.GraphWindow{stringKey, *readLength, window.Sig}
 		// store the signature for the graph:node:offset
-		sigStore[window.GraphID][window.Node][window.OffSet] = append(sigStore[window.GraphID][window.Node][window.OffSet], window.Sig)
-		sigCount++
+		sigStore = append(sigStore, gw)
+		// add a key to the lookup map
+		lookupMap[stringKey] = seqio.Key{GraphID: window.GraphID, Node: window.Node, OffSet: window.OffSet}
 	}
-	log.Printf("\tnumber of signatures generated: %d\n", sigCount)
-	///////////////////////////////////////////////////////////////////////////////////////
-	// run LSH forest
+	numSigs := len(sigStore)
+	log.Printf("\tnumber of signatures generated: %d\n", numSigs)
+	var database *lshIndex.LshEnsemble
 	if *containment == false {
-		log.Printf("running LSH forest...\n")
-		database := lshIndex.NewLSHforest(*sigSize, *jsThresh)
+		///////////////////////////////////////////////////////////////////////////////////////
+		// run LSH forest
+		log.Printf("running LSH Forest...\n")
+		database = lshIndex.NewLSHforest(*sigSize, *jsThresh)
 		// range over the nodes in each graph, each node will have one or more signature
-		for graphID, nodesMap := range sigStore {
-			// add each signature to the database
-			for nodeID, offsetMap := range nodesMap {
-				for offset, signatures := range offsetMap {
-					for _, signature := range signatures {
-						// combine graphID, nodeID and offset to form a string key for signature
-						stringKey := fmt.Sprintf("g%dn%do%d", graphID, nodeID, offset)
-						// add the key to a lookup map
-						key := seqio.Key{GraphID: graphID, Node: nodeID, OffSet: offset}
-						database.KeyLookup[stringKey] = key
-						// add the signature to the lshForest
-						database.Add(stringKey, signature, 0)
-					}
-				}
-			}
+		for window := range lshIndex.Windows2Chan(sigStore) {
+			// add the signature to the lshForest
+			database.Add(window.Key, window.Signature, 0)
 		}
 		// print some stuff
 		numHF, numBucks := database.Lshes[0].Settings()
 		log.Printf("\tnumber of hash functions per bucket: %d\n", numHF)
 		log.Printf("\tnumber of buckets: %d\n", numBucks)
-		// save to disk
-		misc.ErrorCheck(database.Dump(*outDir + "/index.sigs"))
 	} else {
 		///////////////////////////////////////////////////////////////////////////////////////
 		// run LSH ensemble (https://github.com/ekzhu/lshensemble)
-		log.Printf("running LSH ensemble...\n")
-
-
-
+		log.Printf("running LSH Ensemble...\n")
+		database = lshIndex.BootstrapLshEnsemble(lshIndex.PARTITIONS, *sigSize, lshIndex.MAXK, numSigs, lshIndex.Windows2Chan(sigStore))
+		// print some stuff
+		log.Printf("\tnumber of LSH Ensemble partitions: %d\n", lshIndex.PARTITIONS)
+		log.Printf("\tmax no. hash functions per bucket: %d\n", lshIndex.MAXK)
 	}
-
-
-
+	// attach the key lookup map to the index
+	database.KeyLookup = lookupMap
 	///////////////////////////////////////////////////////////////////////////////////////
 	// record runtime info
 	info := &misc.IndexInfo{Version: version.VERSION, Ksize: *kSize, SigSize: *sigSize, JSthresh: *jsThresh, ReadLength: *readLength, Containment: *containment}
 	// save the index files
 	log.Printf("saving index files to \"%v\"...", *outDir)
+	misc.ErrorCheck(database.Dump(*outDir + "/index.sigs"))
 	log.Printf("\tsaved MinHash signatures")
 	misc.ErrorCheck(info.Dump(*outDir + "/index.info"))
 	log.Printf("\tsaved runtime info")

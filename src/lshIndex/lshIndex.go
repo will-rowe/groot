@@ -9,6 +9,9 @@ import (
 const HASH_SIZE = 8
 // integration precision for optimising number of bands + hash functions in LSH Forest
 const PRECISION = 0.01
+// number of partitions and maxK to use in LSH Ensemble (TODO: add these as customisable parameters for GROOT)
+const PARTITIONS = 10
+const MAXK = 4
 
 // error messages
 //var (
@@ -29,7 +32,6 @@ func NewLSHensemble(parts []Partition, numHash, maxK int) *LshEnsemble {
 		MaxK:       maxK,
 		NumHash:    numHash,
 		paramCache: cmap.New(),
-		KeyLookup: make(KeyLookupMap),
 	}
 }
 
@@ -48,7 +50,6 @@ func NewLSHforest(sigSize int, jsThresh float64) *LshEnsemble {
 		NumHash:    numHashFuncs,
 		paramCache: cmap.New(),
 		SingleForest:	true,
-		KeyLookup: make(KeyLookupMap),
 	}
 }
 

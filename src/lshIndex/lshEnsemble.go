@@ -43,7 +43,7 @@ type LshEnsemble struct {
 	paramCache cmap.ConcurrentMap
 	Indexed bool
 	SingleForest bool
-	KeyLookup      KeyLookupMap
+	KeyLookup   KeyLookupMap
 }
 
 // Add a new domain to the index given its partition ID - the index of the partition.

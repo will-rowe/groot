@@ -164,6 +164,7 @@ type FastqChecker struct {
 	WindowSize    int
 	MinReadLength int
 	MinQual       int
+	Containment bool
 }
 
 func NewFastqChecker() *FastqChecker {
@@ -206,8 +207,10 @@ func (proc *FastqChecker) Run() {
 	meanRL := float64(lengthTotal) / float64(rawCount)
 	log.Printf("\tmean read length: %.0f\n", meanRL)
 	// check the length is within +/-10 bases of the graph window
-	if meanRL < float64(proc.WindowSize-10) || meanRL > float64(proc.WindowSize+10) {
-		misc.ErrorCheck(fmt.Errorf("read length is too variable (> +/- 10 bases of graph window size), try re-indexing using the --containment option\n"))
+	if proc.Containment == false {
+		if meanRL < float64(proc.WindowSize-10) || meanRL > float64(proc.WindowSize+10) {
+			misc.ErrorCheck(fmt.Errorf("read length is too variable (> +/- 10 bases of graph window size), try re-indexing using the --containment option\n"))
+		}
 	}
 }
 
