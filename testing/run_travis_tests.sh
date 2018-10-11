@@ -1,3 +1,5 @@
+## Due to Travis failing on runtime, I've had to change the db over from arg-annot to groot-core-db, consequently the test reads (derived from arg-annot) won't align as well
+
 #!/bin/bash
 
 # install the software

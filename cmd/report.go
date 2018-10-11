@@ -98,7 +98,7 @@ func reportParamCheck() error {
 		log.Printf("\tBAM file: %v", *bamFile)
 	}
 	if *covCutoff > 1.0 {
-		return fmt.Errorf("supplied coverage cutoff exceeds 1.0 (100%): %v", *covCutoff)
+		return fmt.Errorf("supplied coverage cutoff exceeds 1.0 (100%%): %.2f", *covCutoff)
 	}
 	return nil
 }

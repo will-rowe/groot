@@ -85,6 +85,7 @@ type IndexInfo struct {
 	SigSize    int
 	JSthresh   float64
 	ReadLength int
+	Containment bool
 }
 
 // method to dump the info to file

@@ -1,9 +1,9 @@
 package graph
 
 import (
+	"fmt"
 	"github.com/will-rowe/gfa"
 	"io"
-	"log"
 	"os"
 	"testing"
 )
@@ -17,12 +17,12 @@ var (
 	blaB10     = []byte("ATGAAAGGATTAAAAGGGCTATTGGTTCTGGCTTTAGGCTTTACAGGACTACAGGTTTTTGGGCAACAGAACCCTGATATTAAAATTGAAAAATTAAAAGATAATTTATACGTCTATACAACCTATAATACCTTCAAAGGAACTAAATATGCGGCTAATGCGGTATATATGGTAACCGATAAAGGAGTAGTGGTTATAGACTCTCCATGGGGAGAAGATAAATTTAAAAGTTTTACAGACGAGATTTATAAAAAGCACGGAAAGAAAGTTATCATGAACATTGCAACCCACTCTCATGATGATAGAGCCGGAGGTCTTGAATATTTTGGTAAACTAGGTGCAAAAACTTATTCTACTAAAATGACAGATTCTATTTTAGCAAAAGAGAATAAGCCAAGAGCAAAGTACACTTTTGATAATAATAAATCTTTTAAAGTAGGAAAGACTGAGTTTCAGGTTTATTATCCGGGAAAAGGTCATACAGCAGATAATGTGGTTGTGTGGTTTCCTAAAGACAAAGTATTAGTAGGAGGCTGCATTGTAAAAAGTGGTGATTCGAAAGACCTTGGGTTTATTGGGGAAGCTTATGTAAACGACTGGACACAGTCCATACACAACATTCAGCAGAAATTTCCCTATGTTCAGTATGTCGTTGCAGGTCATGACGACTGGAAAGATCAAACATCAATACAACATACACTGGATTTAATCAGTGAATATCAACAAAAACAAAAGGCTTCAAATTAA")
 )
 
-func loadGFA() *gfa.GFA {
+func loadGFA() (*gfa.GFA, error) {
 	// load the GFA file
 	fh, err := os.Open(inputFile)
 	reader, err := gfa.NewReader(fh)
 	if err != nil {
-		log.Fatal("can't read gfa file: %v", err)
+		return nil, fmt.Errorf("can't read gfa file: %v", err)
 	}
 	// collect the GFA instance
 	myGFA := reader.CollectGFA()
@@ -33,30 +33,30 @@ func loadGFA() *gfa.GFA {
 			break
 		}
 		if err != nil {
-			log.Fatal("error reading line in gfa file: %v", err)
+			return nil, fmt.Errorf("error reading line in gfa file: %v", err)
 		}
 		if err := line.Add(myGFA); err != nil {
-			log.Fatal("error adding line to GFA instance: %v", err)
+			return nil, fmt.Errorf("error adding line to GFA instance: %v", err)
 		}
 	}
-	return myGFA
+	return myGFA, nil
 }
 
-func loadMSA() *gfa.GFA {
+func loadMSA() (*gfa.GFA, error) {
 	// load the MSA
 	msa, _ := gfa.ReadMSA(inputFile2)
 	// convert the MSA to a GFA instance
 	myGFA, err := gfa.MSA2GFA(msa)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return myGFA
+	return myGFA, err
 }
 
 // test CreateGrootGraph
 func TestCreateGrootGraph(t *testing.T) {
-	myGFA := loadGFA()
-	_, err := CreateGrootGraph(myGFA, 1)
+	myGFA, err := loadGFA()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = CreateGrootGraph(myGFA, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,10 @@ func TestCreateGrootGraph(t *testing.T) {
 
 // test Graph2Seq
 func TestGraph2Seq(t *testing.T) {
-	myGFA := loadGFA()
+	myGFA, err := loadGFA()
+	if err != nil {
+		t.Fatal(err)
+	}
 	grootGraph, err := CreateGrootGraph(myGFA, 1)
 	if err != nil {
 		t.Fatal(err)
@@ -82,8 +85,10 @@ func TestGraph2Seq(t *testing.T) {
 
 // test WindowGraph
 func TestWindowGraph(t *testing.T) {
-	myGFA := loadMSA()
-	//myGFA := loadGFA()
+	myGFA, err := loadMSA()
+	if err != nil {
+		t.Fatal(err)
+	}
 	grootGraph, err := CreateGrootGraph(myGFA, 1)
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +104,10 @@ func TestWindowGraph(t *testing.T) {
 
 // test GraphStore dump/load
 func TestGraphStore(t *testing.T) {
-	myGFA := loadGFA()
+	myGFA, err := loadGFA()
+	if err != nil {
+		t.Fatal(err)
+	}
 	grootGraph, err := CreateGrootGraph(myGFA, 1)
 	if err != nil {
 		t.Fatal(err)
@@ -123,7 +131,10 @@ func TestGraphStore(t *testing.T) {
 
 // test DumpGraph to save a gfa
 func TestGraphDump(t *testing.T) {
-	myGFA := loadGFA()
+	myGFA, err := loadGFA()
+	if err != nil {
+		t.Fatal(err)
+	}
 	grootGraph, err := CreateGrootGraph(myGFA, 1)
 	if err != nil {
 		t.Fatal(err)

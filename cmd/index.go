@@ -35,7 +35,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/gfa"
 	"github.com/will-rowe/groot/src/graph"
-	"github.com/will-rowe/groot/src/lshForest"
+	"github.com/will-rowe/groot/src/lshIndex"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/seqio"
 	"github.com/will-rowe/groot/src/version"
@@ -51,6 +51,7 @@ var (
 	msaList       []string                                                         // the collected MSA files
 	outDir        *string                                                          // directory to save index files and log to
 	defaultOutDir = "./groot-index-" + string(time.Now().Format("20060102150405")) // a default dir to store the index files
+	containment *bool													// use lshEnsemble instead of lshForest -- allows for variable read length
 )
 
 // the index command (used by cobra)
@@ -70,10 +71,11 @@ var indexCmd = &cobra.Command{
 func init() {
 	kSize = indexCmd.Flags().IntP("kmerSize", "k", 7, "size of k-mer")
 	sigSize = indexCmd.Flags().IntP("sigSize", "s", 128, "size of MinHash signature")
-	readLength = indexCmd.Flags().IntP("readLength", "l", 100, "length of query reads (which will be aligned during the align subcommand)")
-	jsThresh = indexCmd.Flags().Float64P("jsThresh", "j", 0.99, "minimum Jaccard similarity for a seed to be recorded")
+	readLength = indexCmd.Flags().IntP("readLength", "l", 100, "max length of query reads (which will be aligned during the align subcommand)")
+	jsThresh = indexCmd.Flags().Float64P("jsThresh", "j", 0.99, "minimum Jaccard similarity for a seed to be recorded (note: this is used as a containment theshold when --containment set")
 	msaDir = indexCmd.Flags().StringP("msaDir", "i", "", "directory containing the clustered references (MSA files) - required")
 	outDir = indexCmd.PersistentFlags().StringP("outDir", "o", defaultOutDir, "directory to save index files to")
+	containment = indexCmd.Flags().BoolP("containment", "c", false, "use lshEnsemble instead of lshForest (allows for variable read length during alignment)")
 	indexCmd.MarkFlagRequired("msaDir")
 	RootCmd.AddCommand(indexCmd)
 }
@@ -136,6 +138,11 @@ func runIndex() {
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
 	misc.ErrorCheck(indexParamCheck())
+	if *containment {
+		log.Printf("\tindexing scheme: lshEnsemble (containment search)")
+	} else {
+		log.Printf("\tindexing scheme: lshForest")
+	}
 	log.Printf("\tprocessors: %d", *proc)
 	log.Printf("\tk-mer size: %d", *kSize)
 	log.Printf("\tsignature size: %d", *sigSize)
@@ -198,56 +205,57 @@ func runIndex() {
 	}()
 	///////////////////////////////////////////////////////////////////////////////////////
 	// collect and store the GrootGraph windows
-	var sigStore = make([]map[int]map[int][][]uint64, len(graphStore))
-	for i := range sigStore {
-		sigStore[i] = make(map[int]map[int][][]uint64)
-	}
+	sigStore := []*lshIndex.GraphWindow{}
+	lookupMap := make(lshIndex.KeyLookupMap)
 	// receive the signatures
-	var sigCount int = 0
 	for window := range windowChan {
-		// initialise the inner map of sigStore if graph has not been seen yet
-		if _, ok := sigStore[window.GraphID][window.Node]; !ok {
-			sigStore[window.GraphID][window.Node] = make(map[int][][]uint64)
-		}
+		// combine graphID, nodeID and offset to form a string key for signature
+		stringKey := fmt.Sprintf("g%dn%do%d", window.GraphID, window.Node, window.OffSet)
+		// convert to a graph window
+		gw := &lshIndex.GraphWindow{stringKey, *readLength, window.Sig}
 		// store the signature for the graph:node:offset
-		sigStore[window.GraphID][window.Node][window.OffSet] = append(sigStore[window.GraphID][window.Node][window.OffSet], window.Sig)
-		sigCount++
+		sigStore = append(sigStore, gw)
+		// add a key to the lookup map
+		lookupMap[stringKey] = seqio.Key{GraphID: window.GraphID, Node: window.Node, OffSet: window.OffSet}
 	}
-	log.Printf("\tnumber of signatures generated: %d\n", sigCount)
-	///////////////////////////////////////////////////////////////////////////////////////
-	// run LSH forest
-	log.Printf("running LSH forest...\n")
-	database := lshForest.NewLSHforest(*sigSize, *jsThresh)
-	// range over the nodes in each graph, each node will have one or more signature
-	for graphID, nodesMap := range sigStore {
-		// add each signature to the database
-		for nodeID, offsetMap := range nodesMap {
-			for offset, signatures := range offsetMap {
-				for _, signature := range signatures {
-					// combine graphID, nodeID and offset to form a string key for signature
-					stringKey := fmt.Sprintf("g%dn%do%d", graphID, nodeID, offset)
-					// add the key to a lookup map
-					key := seqio.Key{GraphID: graphID, Node: nodeID, OffSet: offset}
-					database.KeyLookup[stringKey] = key
-					// add the signature to the lshForest
-					database.Add(stringKey, signature)
-				}
-			}
+	numSigs := len(sigStore)
+	log.Printf("\tnumber of signatures generated: %d\n", numSigs)
+	var database *lshIndex.LshEnsemble
+	if *containment == false {
+		///////////////////////////////////////////////////////////////////////////////////////
+		// run LSH forest
+		log.Printf("running LSH Forest...\n")
+		database = lshIndex.NewLSHforest(*sigSize, *jsThresh)
+		// range over the nodes in each graph, each node will have one or more signature
+		for window := range lshIndex.Windows2Chan(sigStore) {
+			// add the signature to the lshForest
+			database.Add(window.Key, window.Signature, 0)
 		}
+		// print some stuff
+		numHF, numBucks := database.Lshes[0].Settings()
+		log.Printf("\tnumber of hash functions per bucket: %d\n", numHF)
+		log.Printf("\tnumber of buckets: %d\n", numBucks)
+	} else {
+		///////////////////////////////////////////////////////////////////////////////////////
+		// run LSH ensemble (https://github.com/ekzhu/lshensemble)
+		log.Printf("running LSH Ensemble...\n")
+		database = lshIndex.BootstrapLshEnsemble(lshIndex.PARTITIONS, *sigSize, lshIndex.MAXK, numSigs, lshIndex.Windows2Chan(sigStore))
+		// print some stuff
+		log.Printf("\tnumber of LSH Ensemble partitions: %d\n", lshIndex.PARTITIONS)
+		log.Printf("\tmax no. hash functions per bucket: %d\n", lshIndex.MAXK)
 	}
-	numHF, numBucks := database.Settings()
-	log.Printf("\tnumber of hash functions per bucket: %d\n", numHF)
-	log.Printf("\tnumber of buckets: %d\n", numBucks)
+	// attach the key lookup map to the index
+	database.KeyLookup = lookupMap
 	///////////////////////////////////////////////////////////////////////////////////////
 	// record runtime info
-	info := &misc.IndexInfo{Version: version.VERSION, Ksize: *kSize, SigSize: *sigSize, JSthresh: *jsThresh, ReadLength: *readLength}
+	info := &misc.IndexInfo{Version: version.VERSION, Ksize: *kSize, SigSize: *sigSize, JSthresh: *jsThresh, ReadLength: *readLength, Containment: *containment}
 	// save the index files
 	log.Printf("saving index files to \"%v\"...", *outDir)
+	misc.ErrorCheck(database.Dump(*outDir + "/index.sigs"))
+	log.Printf("\tsaved MinHash signatures")
 	misc.ErrorCheck(info.Dump(*outDir + "/index.info"))
 	log.Printf("\tsaved runtime info")
 	misc.ErrorCheck(graphStore.Dump(*outDir + "/index.graph"))
 	log.Printf("\tsaved groot graphs")
-	misc.ErrorCheck(database.Dump(*outDir + "/index.sigs"))
-	log.Printf("\tsaved MinHash signatures")
 	log.Println("finished")
 }

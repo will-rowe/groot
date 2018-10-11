@@ -22,6 +22,8 @@
 
 Since version 0.4, `GROOT` will also output the variation graphs which had reads align. These graphs are in [GFA format](https://github.com/GFA-spec/GFA-spec), allowing you to visualise graph alignments using [Bandage](https://github.com/rrwick/Bandage) and determine which variants of a given ARG type are dominant in your metagenomes. Read the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more info.
 
+Since version 0.8.0, `GROOT` can now optionally use an [LSH Ensemble](https://ekzhu.github.io/datasketch/lshensemble.html) index to enable containment searching. This is thanks to the excellent [method](http://www.vldb.org/pvldb/vol9/p1185-zhu.pdf) and [implementation](https://github.com/ekzhu/lshensemble) of Erkang Zhu. This new index allows the reads of varying read length to be queried against **groot graphs**.
+
 ## Installation
 
 Check out the [releases](https://github.com/will-rowe/groot/releases) to download a binary. Alternatively, install using Bioconda or compile the software from source.
