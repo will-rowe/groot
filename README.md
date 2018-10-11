@@ -38,7 +38,7 @@ conda install groot
 
 ### Source
 
-`GROOT` is written in Go (v1.9) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
+`GROOT` is written in Go (v1.10) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
 
 ```bash
 # Clone this repository
@@ -73,7 +73,15 @@ groot index -i arg-annot.90 -o groot-index -l 100
 # Align reads and report
 groot align -i groot-index -f reads.fq | groot report
 ```
->note: you must run the index subcommand using your query read length (e.g. `-l 100` for 100bp reads)
+>note: index the graph using a window size <= your maximum expected read length, so for 100bp reads, use `-l 100`
+
+If you anticipate variable read lengths, index the graphs for containment searching:
+
+```bash
+# Create graphs and index for containment searching
+groot index -i arg-annot.90 -o groot-index -l 100 --containment -j 0.5
+```
+>note: the above command will allow you to align reads of any length (up to `-l 100`) to the graphs, within a containment threshold of 0.5 (`-j 0.5`)
 
 
 ## Further Information & Citing
