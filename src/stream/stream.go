@@ -250,11 +250,12 @@ func (proc *DbQuerier) Run() {
 					read.RC = true // set RC flag so we can tell which orientation the read is in
 				}
 				// get signature for read
-				readMH := read.RunMinHash(proc.CommandInfo.Ksize, proc.CommandInfo.SigSize)
+				readMH, err := read.RunMinHash(proc.CommandInfo.Ksize, proc.CommandInfo.SigSize)
+				misc.ErrorCheck(err)
 				// query the LSH index
 				done := make(chan struct{})
 				defer close(done)
-				for result := range proc.Db.Query(readMH.Signature(), len(read.Seq), proc.Threshold, done) {
+				for result := range proc.Db.Query(readMH, len(read.Seq), proc.Threshold, done) {
 					seed := proc.Db.KeyLookup[result.(string)]
 					seed.RC = read.RC
 					seeds = append(seeds, seed)

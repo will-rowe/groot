@@ -1,68 +1,75 @@
-// the minhash package contains a MinHash implementation that is adapted from go-minhash (https://godoc.org/github.com/dgryski/go-minhash)
+// the minhash package contains a minHash implementation that uses the ntHash rolling hash function
 package minhash
 
 import (
 	"errors"
 	"math"
+
+	"github.com/will-rowe/ntHash"
 )
 
+// if set true, ntHash will return the canonical k-mer (inspects both strands for each k-mer and returns the lowest hash value)
+const CANONICAL = false
+
 /*
-  The MinHash struct contains all the minimum hash values for a sequence
+  The minHash struct contains all the minimum hash values for a sequence
 */
-type MinHash struct {
+type minHash struct {
+	kSize int
 	signature []uint64
-	hashFunc1 Hash64
-	hashFunc2 Hash64
 }
-type Hash64 func([]byte) uint64
 
-/*
-  A method to hash a k-mer and add signature to the MinHash struct
-*/
-func (self *MinHash) Add(kmer []byte) {
-	hashValue1, hashValue2 := self.hashFunc1(kmer), self.hashFunc2(kmer)
-	for i, minVal := range self.signature {
-		newVal := hashValue1 + uint64(i)*hashValue2
-		if newVal < minVal {
-			self.signature[i] = newVal
+// Add a sequence to the minHash
+func (minHash *minHash) Add(sequence []byte) error {
+		// initiate the rolling hash
+		hasher, err := ntHash.New(&sequence, minHash.kSize)
+		if err != nil {
+			return err
 		}
-	}
+	// get hashed kmers from read
+		for hash := range hasher.Hash(CANONICAL) {
+			// for each hashed k-mer, try adding it to the sketch
+			for i, minVal := range minHash.signature {
+				// split the hashed k-mer (uint64) into two uint32
+				h1, h2 := uint32(hash), uint32(hash>>32)
+				// get the new hash value for this signature position
+				newVal := uint64(h1 + uint32(i)*h2)
+				// evaluate and add to the signature if it is a minimum
+				if newVal < minVal {
+					minHash.signature[i] = newVal
+				}
+			}
+		}
+	return nil
 }
 
-/*
-  A method to dump the MinHash signature
-*/
-func (self *MinHash) Signature() []uint64 {
-	return self.signature
+// Signature returns the current minHash signature (set of minimums)
+func (minHash *minHash) Signature() []uint64 {
+	return minHash.signature
 }
 
-/*
-  A method to estimate Jaccard Similarity between a MinHash struct and a query MH signature
-*/
-func (self *MinHash) Similarity(querySig []uint64) (float64, error) {
-	if len(self.signature) != len(querySig) {
+// Similarity is a method to estimate the Jaccard Similarity using to minHash signatures
+func (minHash *minHash) Similarity(querySig []uint64) (float64, error) {
+	if len(minHash.signature) != len(querySig) {
 		return 0, errors.New("length of minhash signatures do not match\n")
 	}
 	intersect := 0
-	for i := range self.signature {
-		if self.signature[i] == querySig[i] {
+	for i := range minHash.signature {
+		if minHash.signature[i] == querySig[i] {
 			intersect++
 		}
 	}
-	return float64(intersect) / float64(len(self.signature)), nil
+	return float64(intersect) / float64(len(minHash.signature)), nil
 }
 
-/*
-  A function to create a new MinHash struct
-*/
-func NewMinHash(h1, h2 Hash64, size int) *MinHash {
-	signature := make([]uint64, size)
+// NewminHash initiates a minHash struct and populates the signature with max values
+func NewMinHash(kSize, sigSize int) *minHash {
+	signature := make([]uint64, sigSize)
 	for i := range signature {
 		signature[i] = math.MaxUint64
 	}
-	newMinHash := new(MinHash)
-	newMinHash.hashFunc1 = h1
-	newMinHash.hashFunc2 = h2
-	newMinHash.signature = signature
-	return newMinHash
+	return &minHash{
+		kSize: kSize,
+		signature: signature,
+	}
 }

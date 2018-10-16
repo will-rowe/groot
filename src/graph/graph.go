@@ -15,6 +15,7 @@ import (
 	"github.com/biogo/hts/sam"
 	"github.com/will-rowe/gfa"
 	"github.com/will-rowe/groot/src/seqio"
+	"github.com/will-rowe/groot/src/misc"
 )
 
 /*
@@ -250,7 +251,8 @@ func (graph *GrootGraph) WindowGraph(windowSize, kSize, sigSize int) <-chan *Win
 					for path := range sendPath {
 						// get a minhash signature
 						windowSeq := seqio.Sequence{Seq: path}
-						sig := windowSeq.RunMinHash(kSize, sigSize).Signature()
+						sig, err := windowSeq.RunMinHash(kSize, sigSize)
+						misc.ErrorCheck(err)
 						// check if we have seen this signature for this node and offset
 						hashedSig := sigHasher(sig)
 						if _, ok := sigChecker[hashedSig]; !ok {
