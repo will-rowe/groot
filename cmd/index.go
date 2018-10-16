@@ -69,8 +69,8 @@ var indexCmd = &cobra.Command{
 
 // a function to initialise the command line arguments
 func init() {
-	kSize = indexCmd.Flags().IntP("kmerSize", "k", 7, "size of k-mer")
-	sigSize = indexCmd.Flags().IntP("sigSize", "s", 128, "size of MinHash signature")
+	kSize = indexCmd.Flags().IntP("kmerSize", "k", 31, "size of k-mer")
+	sigSize = indexCmd.Flags().IntP("sigSize", "s", 42, "size of MinHash signature")
 	readLength = indexCmd.Flags().IntP("readLength", "l", 100, "max length of query reads (which will be aligned during the align subcommand)")
 	jsThresh = indexCmd.Flags().Float64P("jsThresh", "j", 0.99, "minimum Jaccard similarity for a seed to be recorded (note: this is used as a containment theshold when --containment set")
 	msaDir = indexCmd.Flags().StringP("msaDir", "i", "", "directory containing the clustered references (MSA files) - required")
