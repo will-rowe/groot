@@ -48,13 +48,11 @@ func hashKeyFuncGen(hashValueSize int) hashKeyFunc {
 // L (number of bands) and
 // K (number of hash functions per band).
 type LshForest struct {
-	k              int
-	l              int
-	initHashTables []initHashTable
-	hashTables     []hashTable
+	K              int
+	L              int
+	InitHashTables []initHashTable
+	HashTables     []hashTable
 	hashKeyFunc    hashKeyFunc
-	hashValueSize  int
-	KeyLookup		KeyLookupMap
 }
 
 //
@@ -68,32 +66,30 @@ func newLshForest(k, l int) *LshForest {
 		initHashTables[i] = make(initHashTable)
 	}
 	return &LshForest{
-		k:              k,
-		l:              l,
-		hashValueSize:  HASH_SIZE,
-		initHashTables: initHashTables,
-		hashTables:     hashTables,
+		K:              k,
+		L:              l,
+		InitHashTables: initHashTables,
+		HashTables:     hashTables,
 		hashKeyFunc:    hashKeyFuncGen(HASH_SIZE),
-		KeyLookup:	make(KeyLookupMap),
 	}
 }
 
 // Returns the number of hash functions per band and the number of bands
 func (f *LshForest) Settings() (int, int) {
-	return f.k, f.l
+	return f.K, f.L
 }
 
 // Add a key with MinHash signature into the index.
 // The key won't be searchable until Index() is called.
 func (f *LshForest) Add(key interface{}, sig []uint64) {
 	// Generate hash keys
-	Hs := make([]string, f.l)
-	for i := 0; i < f.l; i++ {
-		Hs[i] = f.hashKeyFunc(sig[i*f.k : (i+1)*f.k])
+	Hs := make([]string, f.L)
+	for i := 0; i < f.L; i++ {
+		Hs[i] = f.hashKeyFunc(sig[i*f.K : (i+1)*f.K])
 	}
 	// Insert keys into the bootstrapping tables
-	for i := range f.initHashTables {
-		ht := f.initHashTables[i]
+	for i := range f.InitHashTables {
+		ht := f.InitHashTables[i]
 		hk := Hs[i]
 		if _, exist := ht[hk]; exist {
 			ht[hk] = append(ht[hk], key)
@@ -106,39 +102,39 @@ func (f *LshForest) Add(key interface{}, sig []uint64) {
 
 // Index makes all the keys added searchable.
 func (f *LshForest) Index() {
-	for i := range f.hashTables {
-		ht := make(hashTable, 0, len(f.initHashTables[i]))
+	for i := range f.HashTables {
+		ht := make(hashTable, 0, len(f.InitHashTables[i]))
 		// Build sorted hash table using buckets from init hash tables
-		for hashKey, keys := range f.initHashTables[i] {
+		for hashKey, keys := range f.InitHashTables[i] {
 			ht = append(ht, bucket{
 				hashKey: hashKey,
 				keys:    keys,
 			})
 		}
 		sort.Sort(ht)
-		f.hashTables[i] = ht
+		f.HashTables[i] = ht
 		// Reset the init hash tables
-		f.initHashTables[i] = make(initHashTable)
+		f.InitHashTables[i] = make(initHashTable)
 	}
 }
 
 // Query returns candidate keys given the query signature and parameters.
 func (f *LshForest) Query(sig []uint64, K, L int, out chan<- interface{}, done <-chan struct{}) {
 	if K == -1 {
-		K = f.k
+		K = f.K
 	}
 	if L == -1 {
-		L = f.l
+		L = f.L
 	}
-	prefixSize := f.hashValueSize * K
+	prefixSize := HASH_SIZE * K
 	// Generate hash keys
 	Hs := make([]string, L)
 	for i := 0; i < L; i++ {
-		Hs[i] = f.hashKeyFunc(sig[i*f.k : i*f.k+K])
+		Hs[i] = f.hashKeyFunc(sig[i*f.K : i*f.K+K])
 	}
 	seens := make(map[interface{}]bool)
 	for i := 0; i < L; i++ {
-		ht := f.hashTables[i]
+		ht := f.HashTables[i]
 		hk := Hs[i]
 		k := sort.Search(len(ht), func(x int) bool {
 			return ht[x].hashKey[:prefixSize] >= hk
@@ -167,8 +163,8 @@ func (f *LshForest) Query(sig []uint64, K, L int, out chan<- interface{}, done <
 // and t is the containment threshold.
 func (f *LshForest) OptimalKL(x, q int, t float64) (optK, optL int, fp, fn float64) {
 	minError := math.MaxFloat64
-	for l := 1; l <= f.l; l++ {
-		for k := 1; k <= f.k; k++ {
+	for l := 1; l <= f.L; l++ {
+		for k := 1; k <= f.K; k++ {
 			currFp := probFalsePositiveC(x, q, l, k, t, PRECISION)
 			currFn := probFalseNegativeC(x, q, l, k, t, PRECISION)
 			currErr := currFn + currFp

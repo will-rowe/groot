@@ -7,8 +7,6 @@ import (
 	"errors"
 	"unicode"
 
-	"github.com/dgryski/go-farm"
-	"github.com/dgryski/go-spooky"
 	"github.com/will-rowe/groot/src/minhash"
 )
 
@@ -92,16 +90,13 @@ func (self *FASTQread) RevComplement() {
 }
 
 // method to split sequence to k-mers + get minhash signature
-func (self *Sequence) RunMinHash(k int, sigSize int) *minhash.MinHash {
-	minhash := minhash.NewMinHash(spooky.Hash64, farm.Hash64, sigSize)
-	for i := range self.Seq {
-		if k > len(self.Seq)-i {
-			break
-		}
-		// create a new k-mer slice from a range of the sequence array and add it to the minhash
-		minhash.Add(append(self.Seq[i : i+k]))
-	}
-	return minhash
+func (self *Sequence) RunMinHash(k int, sigSize int) ([]uint64, error){
+	// create the MinHash
+	minhash := minhash.NewMinHash(k, sigSize)
+	// use the add method to initate rolling ntHash and populate MinHash
+	err := minhash.Add(append(self.Seq))
+	// return the signature and any error
+	return minhash.Signature(), err
 }
 
 // method to quality trim the sequence held in a FASTQread

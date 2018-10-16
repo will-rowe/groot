@@ -1,11 +1,11 @@
 package lshIndex
 
 import (
-	"encoding/gob"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"sync"
 
+	"gopkg.in/vmihailenco/msgpack.v2"
 	"github.com/orcaman/concurrent-map"
 	"github.com/will-rowe/groot/src/seqio"
 )
@@ -40,10 +40,10 @@ type LshEnsemble struct {
 	Lshes      []*LshForest
 	MaxK       int
 	NumHash    int
-	paramCache cmap.ConcurrentMap
 	Indexed bool
 	SingleForest bool
 	KeyLookup   KeyLookupMap
+	paramCache cmap.ConcurrentMap
 }
 
 // Add a new domain to the index given its partition ID - the index of the partition.
@@ -137,50 +137,20 @@ func (LshEnsemble *LshEnsemble) Dump(path string) error {
 	if LshEnsemble.Indexed == true {
 		return fmt.Errorf("cannot dump the LSH Index after running the indexing method")
 	}
-	file, err := os.Create(path)
+	b, err := msgpack.Marshal(LshEnsemble)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	encoder := gob.NewEncoder(file)
-	if err := encoder.Encode(LshEnsemble); err != nil {
-		return err
-	 }
-	for _, lsh := range LshEnsemble.Lshes {
-		for _, bandContents := range lsh.initHashTables {
-			err := encoder.Encode(bandContents)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	err = encoder.Encode(LshEnsemble.KeyLookup)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ioutil.WriteFile(path, b, 0644)
 }
 
 // Load an LSH index from disk
 func (LshEnsemble *LshEnsemble) Load(path string) error {
-	file, err := os.Open(path)
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	decoder := gob.NewDecoder(file)
-	if err := decoder.Decode(&LshEnsemble); err != nil {
-		return(err)
-	 }
-	for _, lsh := range LshEnsemble.Lshes {
-		for _, bandContents := range lsh.initHashTables {
-			err := decoder.Decode(&bandContents)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	err = decoder.Decode(&LshEnsemble.KeyLookup)
+	err = msgpack.Unmarshal(b, LshEnsemble)
 	if err != nil {
 		return err
 	}
