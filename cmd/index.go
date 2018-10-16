@@ -52,6 +52,8 @@ var (
 	outDir        *string                                                          // directory to save index files and log to
 	defaultOutDir = "./groot-index-" + string(time.Now().Format("20060102150405")) // a default dir to store the index files
 	containment *bool													// use lshEnsemble instead of lshForest -- allows for variable read length
+	maxK	*int	// the maxK for LSH Ensemble (only active for --containment)
+	numPart	*int	// the number of partitions for LSH Ensemble (only active for --containment)
 )
 
 // the index command (used by cobra)
@@ -76,6 +78,8 @@ func init() {
 	msaDir = indexCmd.Flags().StringP("msaDir", "i", "", "directory containing the clustered references (MSA files) - required")
 	outDir = indexCmd.PersistentFlags().StringP("outDir", "o", defaultOutDir, "directory to save index files to")
 	containment = indexCmd.Flags().BoolP("containment", "c", false, "use lshEnsemble instead of lshForest (allows for variable read length during alignment)")
+	maxK = indexCmd.Flags().IntP("maxK", "m", 4, "maxK in LSH Ensemble (only active with --containment)")
+	numPart = indexCmd.Flags().IntP("numPart", "n", 4, "num. partitions in LSH Ensemble (only active with --containment)")
 	indexCmd.MarkFlagRequired("msaDir")
 	RootCmd.AddCommand(indexCmd)
 }
@@ -239,10 +243,10 @@ func runIndex() {
 		///////////////////////////////////////////////////////////////////////////////////////
 		// run LSH ensemble (https://github.com/ekzhu/lshensemble)
 		log.Printf("running LSH Ensemble...\n")
-		database = lshIndex.BootstrapLshEnsemble(lshIndex.PARTITIONS, *sigSize, lshIndex.MAXK, numSigs, lshIndex.Windows2Chan(sigStore))
+		database = lshIndex.BootstrapLshEnsemble(*numPart, *sigSize, *maxK, numSigs, lshIndex.Windows2Chan(sigStore))
 		// print some stuff
-		log.Printf("\tnumber of LSH Ensemble partitions: %d\n", lshIndex.PARTITIONS)
-		log.Printf("\tmax no. hash functions per bucket: %d\n", lshIndex.MAXK)
+		log.Printf("\tnumber of LSH Ensemble partitions: %d\n", *numPart)
+		log.Printf("\tmax no. hash functions per bucket: %d\n", *maxK)
 	}
 	// attach the key lookup map to the index
 	database.KeyLookup = lookupMap

@@ -11,7 +11,7 @@ const HASH_SIZE = 8
 const PRECISION = 0.01
 // number of partitions and maxK to use in LSH Ensemble (TODO: add these as customisable parameters for GROOT)
 const PARTITIONS = 6
-const MAXK = 42
+const MAXK = 4
 
 // error messages
 //var (
