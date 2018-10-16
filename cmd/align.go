@@ -160,8 +160,8 @@ func alignParamCheck() error {
 func runAlign() {
 	// set up profiling
 	if *profiling == true {
-		//defer profile.Start(profile.MemProfile, profile.ProfilePath("./")).Stop()
-		defer profile.Start(profile.ProfilePath("./")).Stop()
+		defer profile.Start(profile.MemProfile, profile.ProfilePath("./")).Stop()
+		//defer profile.Start(profile.ProfilePath("./")).Stop()
 	}
 	// start logging
 	logFH := misc.StartLogging(*logFile)
