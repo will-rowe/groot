@@ -11,9 +11,7 @@ import (
 // if set true, ntHash will return the canonical k-mer (inspects both strands for each k-mer and returns the lowest hash value)
 const CANONICAL = false
 
-/*
-  The minHash struct contains all the minimum hash values for a sequence
-*/
+// minHash struct contains all the minimum hash values for a sequence
 type minHash struct {
 	kSize int
 	signature []uint64
@@ -21,25 +19,22 @@ type minHash struct {
 
 // Add a sequence to the minHash
 func (minHash *minHash) Add(sequence []byte) error {
-		// initiate the rolling hash
-		hasher, err := ntHash.New(&sequence, minHash.kSize)
-		if err != nil {
-			return err
-		}
+	// initiate the rolling ntHash
+	hasher, err := ntHash.New(&sequence, minHash.kSize)
+	if err != nil {
+		return err
+	}
 	// get hashed kmers from read
-		for hash := range hasher.Hash(CANONICAL) {
-			// for each hashed k-mer, try adding it to the sketch
-			for i, minVal := range minHash.signature {
-				// split the hashed k-mer (uint64) into two uint32
-				h1, h2 := uint32(hash), uint32(hash>>32)
-				// get the new hash value for this signature position
-				newVal := uint64(h1 + uint32(i)*h2)
-				// evaluate and add to the signature if it is a minimum
-				if newVal < minVal {
-					minHash.signature[i] = newVal
-				}
+	for h1 := range hasher.Hash(CANONICAL) {
+		// for each hashed k-mer, try adding it to the sketch
+		for i := 0; i < len(minHash.signature); i++ {
+			newVal := h1 + (uint64(i) * h1)
+			// evaluate and add to the signature if it is a minimum
+			if newVal < minHash.signature[i] {
+				minHash.signature[i] = newVal
 			}
 		}
+	}
 	return nil
 }
 
