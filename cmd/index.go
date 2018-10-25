@@ -72,12 +72,12 @@ var indexCmd = &cobra.Command{
 // a function to initialise the command line arguments
 func init() {
 	kSize = indexCmd.Flags().IntP("kmerSize", "k", 31, "size of k-mer")
-	sigSize = indexCmd.Flags().IntP("sigSize", "s", 42, "size of MinHash signature")
+	sigSize = indexCmd.Flags().IntP("sigSize", "s", 84, "size of MinHash signature")
 	readLength = indexCmd.Flags().IntP("readLength", "l", 100, "max length of query reads (which will be aligned during the align subcommand)")
 	jsThresh = indexCmd.Flags().Float64P("jsThresh", "j", 0.99, "minimum Jaccard similarity for a seed to be recorded (note: this is used as a containment theshold when --containment set")
 	msaDir = indexCmd.Flags().StringP("msaDir", "i", "", "directory containing the clustered references (MSA files) - required")
 	outDir = indexCmd.PersistentFlags().StringP("outDir", "o", defaultOutDir, "directory to save index files to")
-	containment = indexCmd.Flags().BoolP("containment", "c", false, "use lshEnsemble instead of lshForest (allows for variable read length during alignment)")
+	containment = indexCmd.Flags().BoolP("containment", "c", false, "use lshEnsemble instead of lshForest (allows read length variation > 10 bases)")
 	maxK = indexCmd.Flags().IntP("maxK", "m", 4, "maxK in LSH Ensemble (only active with --containment)")
 	numPart = indexCmd.Flags().IntP("numPart", "n", 4, "num. partitions in LSH Ensemble (only active with --containment)")
 	indexCmd.MarkFlagRequired("msaDir")
