@@ -173,7 +173,7 @@ func runGet() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	if err := archiver.Tar.Open("tmp.tar", "tmp"); err != nil {
+	if err := archiver.Unarchive("tmp.tar", "tmp"); err != nil {
 		fmt.Println("could not unpack the tarball")
 		fmt.Println(err)
 		os.Exit(1)
