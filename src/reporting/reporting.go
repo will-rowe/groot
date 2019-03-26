@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/biogo/hts/bam"
@@ -168,6 +169,9 @@ func (proc *BAMreader) Run() {
 		close(reportChan)
 	}()
 
+	// this will clean up the ARG name so that we can use it as a filename
+	var replacer = strings.NewReplacer("/", "__", "\t", "__")
+
 	// collect the annotated ARGs
 	for anno := range reportChan {
 		// print info to stdout
@@ -186,6 +190,8 @@ func (proc *BAMreader) Run() {
 			if err != nil {
 				panic(err)
 			}
+			// clean the ARG name
+			anno.arg = replacer.Replace(anno.arg)
 			fileName := fmt.Sprintf("./groot-plots/coverage-for-%v.png", anno.arg)
 			if err := covPlot.Save(8*vg.Inch, 8*vg.Inch, fileName); err != nil {
 				panic(err)
