@@ -32,7 +32,7 @@ import (
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/groot/src/graph"
-	"github.com/will-rowe/groot/src/lshIndex"
+	"github.com/will-rowe/groot/src/lshForest"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/stream"
 	"github.com/will-rowe/groot/src/version"
@@ -160,8 +160,8 @@ func alignParamCheck() error {
 func runAlign() {
 	// set up profiling
 	if *profiling == true {
-		defer profile.Start(profile.MemProfile, profile.ProfilePath("./")).Stop()
-		//defer profile.Start(profile.ProfilePath("./")).Stop()
+		//defer profile.Start(profile.MemProfile, profile.ProfilePath("./")).Stop()
+		defer profile.Start(profile.ProfilePath("./")).Stop()
 	}
 	// start logging
 	logFH := misc.StartLogging(*logFile)
@@ -187,29 +187,21 @@ func runAlign() {
 	log.Print("loading index information...")
 	info := new(misc.IndexInfo)
 	misc.ErrorCheck(info.Load(*indexDir + "/index.info"))
-	if info.Containment {
-			log.Printf("\tindex type: lshEnsemble")
-			log.Printf("\tcontainment search seeding: enabled")
-	} else {
-		log.Printf("\tindex type: lshForest")
-		log.Printf("\tcontainment search seeding: disabled")
-	}
-	log.Printf("\twindow sized used in indexing: %d\n", info.ReadLength)
 	log.Printf("\tk-mer size: %d\n", info.Ksize)
 	log.Printf("\tsignature size: %d\n", info.SigSize)
 	log.Printf("\tJaccard similarity theshold: %0.2f\n", info.JSthresh)
+	log.Printf("\twindow sized used in indexing: %d\n", info.ReadLength)
 	log.Print("loading the groot graphs...")
 	graphStore := make(graph.GraphStore)
 	misc.ErrorCheck(graphStore.Load(*indexDir + "/index.graph"))
 	log.Printf("\tnumber of variation graphs: %d\n", len(graphStore))
 	log.Print("loading the MinHash signatures...")
-	var database *lshIndex.LshEnsemble
-	if info.Containment {
-		database = lshIndex.NewLSHensemble(make([]lshIndex.Partition, lshIndex.PARTITIONS), info.SigSize, lshIndex.MAXK)
-	} else {
-		database = lshIndex.NewLSHforest(info.SigSize, info.JSthresh)
-	}
+	database := lshForest.NewLSHforest(info.SigSize, info.JSthresh)
 	misc.ErrorCheck(database.Load(*indexDir + "/index.sigs"))
+	database.Index()
+	numHF, numBucks := database.Settings()
+	log.Printf("\tnumber of hash functions per bucket: %d\n", numHF)
+	log.Printf("\tnumber of buckets: %d\n", numBucks)
 	///////////////////////////////////////////////////////////////////////////////////////
 	// create SAM references from the sequences held in the graphs
 	referenceMap, err := graphStore.GetRefs()
@@ -230,12 +222,10 @@ func runAlign() {
 
 	// add in the process parameters
 	dataStream.InputFile = *fastq
-	fastqChecker.Containment = info.Containment
 	fastqChecker.WindowSize = info.ReadLength
 	dbQuerier.Db = database
 	dbQuerier.CommandInfo = info
 	dbQuerier.GraphStore = graphStore
-	dbQuerier.Threshold = info.JSthresh
 	graphAligner.GraphStore = graphStore
 	graphAligner.RefMap = referenceMap
 	graphAligner.MaxClip = *clip

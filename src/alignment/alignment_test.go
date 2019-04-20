@@ -1,8 +1,8 @@
 package alignment
 
 import (
-	"fmt"
 	"io"
+	"log"
 	"os"
 	"testing"
 
@@ -18,12 +18,12 @@ var (
 	sigSize    = 128
 )
 
-func loadGFA() (*gfa.GFA, error) {
+func loadGFA() *gfa.GFA {
 	// load the GFA file
 	fh, err := os.Open(inputFile)
 	reader, err := gfa.NewReader(fh)
 	if err != nil {
-		return nil, fmt.Errorf("can't read gfa file: %v", err)
+		log.Fatalf("can't read gfa file: %v", err)
 	}
 	// collect the GFA instance
 	myGFA := reader.CollectGFA()
@@ -34,13 +34,13 @@ func loadGFA() (*gfa.GFA, error) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("error reading line in gfa file: %v", err)
+			log.Fatalf("error reading line in gfa file: %v", err)
 		}
 		if err := line.Add(myGFA); err != nil {
-			return nil, fmt.Errorf("error adding line to GFA instance: %v", err)
+			log.Fatalf("error adding line to GFA instance: %v", err)
 		}
 	}
-	return myGFA, nil
+	return myGFA
 }
 
 func setupMultimapRead() (*seqio.FASTQread, error) {
@@ -80,16 +80,13 @@ func TestExactMatchMultiMapper(t *testing.T) {
 	// create the read
 	testRead, err := setupMultimapRead()
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	// create the GrootGraph and graphStore
-	myGFA, err := loadGFA()
-	if err != nil {
-		t.Fatal(err)
-	}
+	myGFA := loadGFA()
 	grootGraph, err := graph.CreateGrootGraph(myGFA, 1)
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	graphStore := make(graph.GraphStore)
 	graphStore[grootGraph.GraphID] = grootGraph
@@ -116,16 +113,13 @@ func TestExactMatchUniqMapper(t *testing.T) {
 	// create the read
 	testRead, err := setupUniqmapRead()
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	// create the GrootGraph and graphStore
-	myGFA, err := loadGFA()
-	if err != nil {
-		t.Fatal(err)
-	}
+	myGFA := loadGFA()
 	grootGraph, err := graph.CreateGrootGraph(myGFA, 1)
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	graphStore := make(graph.GraphStore)
 	graphStore[grootGraph.GraphID] = grootGraph

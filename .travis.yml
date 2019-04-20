@@ -7,7 +7,7 @@ os:
 
 language: go
 go:
- - 1.9
+- tip # The latest version of Go.
 
 install:
  - go get -d -t -v ./...

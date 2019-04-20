@@ -5,9 +5,9 @@ import (
 )
 
 var (
-	kSize = 11
-	sigSize = 24
-	sequence = []byte("ACTGCGTGCGTGAAACGTGCACGTGACGTG")
+	kSize     = 11
+	sigSize   = 24
+	sequence  = []byte("ACTGCGTGCGTGAAACGTGCACGTGACGTG")
 	sequence2 = []byte("TGACGCACGCACTTTGCACGTGCACTGCAC")
 )
 
@@ -55,7 +55,7 @@ func TestSimilarity(t *testing.T) {
 		t.Fatal("incorrect JS calculation")
 	}
 	// make sure the method checks work
-	mh3 = NewMinHash(kSize, (sigSize+1))
+	mh3 = NewMinHash(kSize, (sigSize + 1))
 	_ = mh3.Add(sequence)
 	_, err = mh.Similarity(mh3.Signature())
 	if err == nil {
