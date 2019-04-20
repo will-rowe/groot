@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/biogo/hts/sam"
-	"github.com/will-rowe/bg/src/misc"
 	"github.com/will-rowe/gfa"
+	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/seqio"
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
