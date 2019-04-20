@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/biogo/hts/bam"
-	"github.com/biogo/hts/bgzf"
-	"github.com/biogo/hts/sam"
 	"io"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/biogo/hts/bam"
+	"github.com/biogo/hts/bgzf"
+	"github.com/biogo/hts/sam"
 )
 
 var inputFile = flag.String("bam", "", "bam file to run accuracy test on")
@@ -28,7 +29,7 @@ func main() {
 		log.Fatalf("could not open bam file %q:", err)
 	}
 	if !ok {
-		log.Printf("file %q has no bgzf magic block: may be truncated", inputFile)
+		log.Printf("file %v has no bgzf magic block: may be truncated", inputFile)
 	}
 	r = f
 	b, err := bam.NewReader(r, 0)
