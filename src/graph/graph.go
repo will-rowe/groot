@@ -4,8 +4,8 @@ package graph
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -13,9 +13,10 @@ import (
 	"time"
 
 	"github.com/biogo/hts/sam"
+	"github.com/will-rowe/bg/src/misc"
 	"github.com/will-rowe/gfa"
 	"github.com/will-rowe/groot/src/seqio"
-	"github.com/will-rowe/groot/src/misc"
+	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 /*
@@ -430,24 +431,20 @@ type GraphStore map[int]*GrootGraph
 
 // Dump is a method to save a GrootGraph to file
 func (graphStore *GraphStore) Dump(path string) error {
-	file, err := os.Create(path)
-	if err == nil {
-		encoder := gob.NewEncoder(file)
-		encoder.Encode(graphStore)
+	b, err := msgpack.Marshal(graphStore)
+	if err != nil {
+		return err
 	}
-	file.Close()
-	return err
+	return ioutil.WriteFile(path, b, 0644)
 }
 
 // Load is a method to load a GrootGraph from file
 func (graphStore *GraphStore) Load(path string) error {
-	file, err := os.Open(path)
-	if err == nil {
-		decoder := gob.NewDecoder(file)
-		err = decoder.Decode(graphStore)
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
 	}
-	file.Close()
-	return err
+	return msgpack.Unmarshal(b, graphStore)
 }
 
 // GetRefs is a method to convert all paths held in graphStore to sam.References

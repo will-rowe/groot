@@ -13,7 +13,7 @@ const CANONICAL = false
 
 // minHash struct contains all the minimum hash values for a sequence
 type minHash struct {
-	kSize int
+	kSize     int
 	signature []uint64
 }
 
@@ -64,7 +64,7 @@ func NewMinHash(kSize, sigSize int) *minHash {
 		signature[i] = math.MaxUint64
 	}
 	return &minHash{
-		kSize: kSize,
+		kSize:     kSize,
 		signature: signature,
 	}
 }

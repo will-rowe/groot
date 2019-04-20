@@ -90,7 +90,7 @@ func (self *FASTQread) RevComplement() {
 }
 
 // method to split sequence to k-mers + get minhash signature
-func (self *Sequence) RunMinHash(k int, sigSize int) ([]uint64, error){
+func (self *Sequence) RunMinHash(k int, sigSize int) ([]uint64, error) {
 	// create the MinHash
 	minhash := minhash.NewMinHash(k, sigSize)
 	// use the add method to initate rolling ntHash and populate MinHash

@@ -169,13 +169,13 @@ func (proc *BAMreader) Run() {
 		close(reportChan)
 	}()
 
-	// this will clean up the ARG name so that we can use it as a filename
-	var replacer = strings.NewReplacer("/", "__", "\t", "__")
-
 	// collect the annotated ARGs
 	for anno := range reportChan {
 		// print info to stdout
 		fmt.Printf("%v\t%d\t%d\t%v\n", anno.arg, anno.count, anno.length, anno.cigar)
+
+		// this will clean up the ARG name so that we can use it as a filename
+		var replacer = strings.NewReplacer("/", "__", "\t", "__")
 
 		// plot coverage for this gene
 		if proc.Plot == true {

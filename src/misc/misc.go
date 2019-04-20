@@ -3,14 +3,15 @@ package misc
 
 import (
 	"encoding/binary"
-	"encoding/gob"
 	"errors"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 // a function to throw error to the log and exit the program
@@ -85,27 +86,22 @@ type IndexInfo struct {
 	SigSize    int
 	JSthresh   float64
 	ReadLength int
-	Containment bool
 }
 
 // method to dump the info to file
 func (self *IndexInfo) Dump(path string) error {
-	file, err := os.Create(path)
-	if err == nil {
-		encoder := gob.NewEncoder(file)
-		encoder.Encode(self)
+	b, err := msgpack.Marshal(self)
+	if err != nil {
+		return err
 	}
-	file.Close()
-	return err
+	return ioutil.WriteFile(path, b, 0644)
 }
 
 // method to load info from file
 func (self *IndexInfo) Load(path string) error {
-	file, err := os.Open(path)
-	if err == nil {
-		decoder := gob.NewDecoder(file)
-		err = decoder.Decode(self)
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
 	}
-	file.Close()
-	return err
+	return msgpack.Unmarshal(b, self)
 }
