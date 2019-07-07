@@ -82,7 +82,7 @@ func Stringify(sig []uint64) string {
 */
 type IndexInfo struct {
 	Version    string
-	Ksize      int
+	Ksize      uint
 	SigSize    int
 	JSthresh   float64
 	ReadLength int

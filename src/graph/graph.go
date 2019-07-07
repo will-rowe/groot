@@ -223,7 +223,7 @@ func (graph *GrootGraph) Graph2Seq(pathID int) []byte {
 }
 
 // WindowGraph is a method to window every node of the graph, generate minhash signautes and return unique ones and their graph locations
-func (graph *GrootGraph) WindowGraph(windowSize, kSize, sigSize int) <-chan *Window {
+func (graph *GrootGraph) WindowGraph(windowSize int, kSize uint, sigSize int) <-chan *Window {
 	// generate a hashing function to convert signatures (uint64[]) to a string
 	sigHasher := GenSigHasher(2)
 	// make the channel to send windows over

@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	kSize     = 11
+	kSize     = uint(11)
 	sigSize   = 24
 	sequence  = []byte("ACTGCGTGCGTGAAACGTGCACGTGACGTG")
 	sequence2 = []byte("TGACGCACGCACTTTGCACGTGCACTGCAC")

@@ -13,7 +13,7 @@ const CANONICAL = false
 
 // minHash struct contains all the minimum hash values for a sequence
 type minHash struct {
-	kSize     int
+	kSize     uint
 	signature []uint64
 }
 
@@ -58,7 +58,7 @@ func (minHash *minHash) Similarity(querySig []uint64) (float64, error) {
 }
 
 // NewminHash initiates a minHash struct and populates the signature with max values
-func NewMinHash(kSize, sigSize int) *minHash {
+func NewMinHash(kSize uint, sigSize int) *minHash {
 	signature := make([]uint64, sigSize)
 	for i := range signature {
 		signature[i] = math.MaxUint64
