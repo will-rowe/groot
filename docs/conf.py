@@ -26,13 +26,13 @@ source_suffix = ['.rst', '.md']
 # -- Project information -----------------------------------------------------
 
 project = 'GROOT'
-copyright = '2018, Will Rowe'
+copyright = '2019, Will Rowe'
 author = 'Will Rowe'
 
 # The short X.Y version
-version = '0.7'
+version = '0.8.5'
 # The full version, including alpha/beta/rc tags
-release = '0.7'
+release = '0.8.5'
 
 
 # -- General configuration ---------------------------------------------------

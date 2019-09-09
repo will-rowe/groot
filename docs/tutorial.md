@@ -25,7 +25,7 @@ The aims are:
 Use conda to set up an environment with all the software we need for this tutorial:
 
 ```
-conda create -n grootTutorial -c bioconda parallel==20171222 sra-tools==2.8 fastqc==0.11.7 bbmap==37.90 multiqc==1.4 groot==0.7 seqkit==0.7.2 samtools==1.4 metacherchant==0.1.0
+conda create -n grootTutorial -c bioconda parallel sra-tools==2.8 fastqc==0.11.7 bbmap==37.90 multiqc groot==0.8.5 seqkit==0.7.2 samtools==1.4 metacherchant==0.1.0
 source activate grootTutorial
 ```
 
