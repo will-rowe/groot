@@ -36,7 +36,7 @@ conda install groot
 
 > note: if using Conda make sure you have added the [Bioconda](https://bioconda.github.io/) channel first
 
-### Brew
+### Brew
 
 ```
 brew install brewsci/bio/groot
