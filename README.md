@@ -36,6 +36,12 @@ conda install groot
 
 > note: if using Conda make sure you have added the [Bioconda](https://bioconda.github.io/) channel first
 
+### Brew
+
+```
+brew install brewsci/bio/groot
+```
+
 ### Source
 
 `GROOT` is written in Go (v1.10) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
