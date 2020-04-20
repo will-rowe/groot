@@ -43,7 +43,7 @@ import (
 
 // the command line arguments
 var (
-	kSize         *uint                                                              // size of k-mer
+	kSize         *uint                                                            // size of k-mer
 	sigSize       *int                                                             // size of MinHash signature
 	readLength    *int                                                             // length of query reads (used during alignment subcommand), needed as window length should ~= read length
 	jsThresh      *float64                                                         // minimum Jaccard similarity for LSH forest query
@@ -92,6 +92,11 @@ func indexParamCheck() error {
 		if f.Name()[0] == 46 {
 			return nil
 		}
+		// ignore empty files
+		if f.Size() == 0 {
+			return nil
+		}
+		// keep anything with an .msa extension
 		if len(strings.Split(path, ".msa")) == 2 {
 			msaList = append(msaList, path)
 		}
