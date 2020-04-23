@@ -10,7 +10,6 @@ import (
 	"github.com/biogo/hts/sam"
 	"github.com/will-rowe/groot/src/lshforest"
 	"github.com/will-rowe/groot/src/minhash"
-	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/seqio"
 	"github.com/will-rowe/groot/src/version"
 )
@@ -137,7 +136,9 @@ func (theBoss *theBoss) mapReads() error {
 
 				// get sketch for read
 				readSketch, err := minhash.GetReadSketch(read.Seq, uint(theBoss.info.KmerSize), uint(theBoss.info.SketchSize), false)
-				misc.ErrorCheck(err)
+				if err != nil {
+					panic(err)
+				}
 
 				// get the number of k-mers in the sequence
 				kmerCount := (len(read.Seq) - theBoss.info.KmerSize) + 1
@@ -150,7 +151,7 @@ func (theBoss *theBoss) mapReads() error {
 				for _, hit := range hits {
 
 					// make a copy of this graphWindow
-					graphWindow := &lshforest.Key{
+					graphWindow := lshforest.Key{
 						GraphID:        hit.GraphID,
 						Node:           hit.Node,
 						OffSet:         hit.OffSet,
@@ -158,8 +159,16 @@ func (theBoss *theBoss) mapReads() error {
 						Freq:           float64(kmerCount), // add the k-mer count of the read in this window
 					}
 
+					// make a copy of the read
+					readCopy := seqio.FASTQread{
+						Sequence: read.Sequence,
+						Misc:     read.Misc,
+						Qual:     read.Qual,
+						RC:       read.RC,
+					}
+
 					// send the window to the correct go routine for read alignment and graph augmentation
-					theBoss.graphMinionRegister[hit.GraphID].inputChannel <- graphMinionPair{graphWindow, read}
+					theBoss.graphMinionRegister[hit.GraphID].inputChannel <- &graphMinionPair{graphWindow, readCopy}
 				}
 
 				// update counts

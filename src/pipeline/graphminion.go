@@ -11,15 +11,15 @@ import (
 )
 
 type graphMinionPair struct {
-	mapping *lshforest.Key
-	read    *seqio.FASTQread
+	mapping lshforest.Key
+	read    seqio.FASTQread
 }
 
 // graphMinion holds a graph and is responsible for augmenting the paths when new mapping data arrives
 type graphMinion struct {
 	id            uint32
 	graph         *graph.GrootGraph
-	inputChannel  chan graphMinionPair
+	inputChannel  chan *graphMinionPair
 	outputChannel chan *sam.Record
 	runAlignment  bool
 	references    []*sam.Reference // the SAM references for each path in this graph
@@ -30,7 +30,7 @@ func newGraphMinion(id uint32, graph *graph.GrootGraph, alignmentChan chan *sam.
 	return &graphMinion{
 		id:            id,
 		graph:         graph,
-		inputChannel:  make(chan graphMinionPair, BUFFERSIZE),
+		inputChannel:  make(chan *graphMinionPair, BUFFERSIZE),
 		outputChannel: alignmentChan,
 		runAlignment:  true, // setting this to True for now to replicate groot behaviour - can be used later to run groot haplotype workflow etc.
 		references:    refs,
@@ -62,7 +62,7 @@ func (graphMinion *graphMinion) start(wg *sync.WaitGroup) {
 			for i := 0; i < 2; i++ {
 
 				// run the alignment
-				alignments, err := graphMinion.graph.AlignRead(mappingData.read, mappingData.mapping, graphMinion.references)
+				alignments, err := graphMinion.graph.AlignRead(&mappingData.read, &mappingData.mapping, graphMinion.references)
 				if err != nil {
 					panic(err)
 				}
@@ -72,9 +72,6 @@ func (graphMinion *graphMinion) start(wg *sync.WaitGroup) {
 
 				// reverse complement read and run again
 				mappingData.read.RevComplement()
-				if i == 1 {
-					break
-				}
 			}
 		}
 	}()
