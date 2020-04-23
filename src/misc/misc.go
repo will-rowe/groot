@@ -90,11 +90,15 @@ func CheckDir(dir string) error {
 
 // CheckFile is a function to check that a file can be read
 func CheckFile(file string) error {
-	if _, err := os.Stat(file); err != nil {
+	fi, err := os.Stat(file)
+	if err != nil {
 		if os.IsNotExist(err) {
 			return fmt.Errorf("file does not exist: %v", file)
 		}
 		return fmt.Errorf("can't access file (check permissions): %v", file)
+	}
+	if fi.Size() == 0 {
+		return fmt.Errorf("file appears to be empty: %v", file)
 	}
 	return nil
 }

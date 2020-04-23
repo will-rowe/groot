@@ -144,13 +144,6 @@ func indexParamCheck() error {
 
 		// check accessibility
 		misc.ErrorCheck(misc.CheckFile(msa))
-		if fh, err := os.Stat(*msaDir); err != nil {
-			return err
-
-			// skip empty files
-		} else if fh.Size() == 0 {
-			continue
-		}
 
 		// add to the pile
 		msaList = append(msaList, msa)
