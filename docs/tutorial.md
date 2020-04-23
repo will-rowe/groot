@@ -2,7 +2,7 @@
 
 This tutorial is intended to show you how to use **GROOT** to identify Antimicrobial Resistance Genes (**ARGs**) and generate resistome profiles as part of a metagenome analysis workflow.
 
-***
+---
 
 We will use some metagenome data from a recent paper by [Winglee et al.][1], where they identify differences in the microbiota in rural versus recently urban subjects from the Hunan province of China.
 
@@ -12,13 +12,13 @@ In particular, we will explore this finding:
 
 The aims are:
 
-* download and check the metagenome data (x40 samples)
-* classify ARG-derived reads
-* generate resistome profiles for each sample
-* visualise the data
-* look at ARG context
+- download and check the metagenome data (x40 samples)
+- classify ARG-derived reads
+- generate resistome profiles for each sample
+- visualise the data
+- look at ARG context
 
-***
+---
 
 ## 1. Setup an environment
 
@@ -29,13 +29,14 @@ conda create -n grootTutorial -c bioconda parallel sra-tools==2.8 fastqc==0.11.7
 source activate grootTutorial
 ```
 
-***
+---
 
 ## 2. Get the data
 
-We downloaded `additional file 1, table s1` from the [Winglee paper](https://doi.org/10.1186/s40168-017-0338-7) and saved the SRA accession number  and the rural/urban status for each metagenome used in the study.
+We downloaded `additional file 1, table s1` from the [Winglee paper](https://doi.org/10.1186/s40168-017-0338-7) and saved the SRA accession number and the rural/urban status for each metagenome used in the study.
 
 To begin, save the accession table to file:
+
 <details>
     <summary>samples.txt</summary>
 <table>
@@ -89,7 +90,7 @@ Next, use `fastq-dump` to download the sequence data from the accession table:
 cut -f 1 samples.txt | parallel --gnu "fastq-dump {}"
 ```
 
-***
+---
 
 ## 3. QC
 
@@ -100,48 +101,48 @@ ls *.fastq | parallel --gnu "fastqc {}"
 multiqc .
 ```
 
-* open up the [MultiQC](multiqc.info/) report in a browser and check the data
-* samples should all be clear of adapters
-* 3 samples failed on sequence quality
+- open up the [MultiQC](multiqc.info/) report in a browser and check the data
+- samples should all be clear of adapters
+- 3 samples failed on sequence quality
 
 Try cleaning up the 3 failed samples using [BBduk](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmap-guide/):
 
-``` bash
+```bash
 ls SRR4454598.fastq SRR4454599.fastq SRR4454610.fastq | parallel --gnu "bbduk.sh in={} out={/.}.trimmed.fastq qtrim=rl trimq=20 minlength=97"
 ```
 
-* check the data is now passing on sequence quality
-* replace the original failed files with the trimmed ones
+- check the data is now passing on sequence quality
+- replace the original failed files with the trimmed ones
 
-***
+---
 
 ## 4. Run GROOT
 
 Download the pre-clustered [ARG-ANNOT](http://en.mediterranee-infection.com/article.php?laref=283%26titre=arg-annot) database:
 
-``` bash
+```bash
 groot get -d arg-annot
 ```
 
 Index the database:
 
-``` bash
-groot index -i arg-annot.90 -o groot-index -l 100 -p 8
+```bash
+groot index -m arg-annot.90 -i groot-index -w 100 -p 8
 ```
 
-*  the metagenomes reads we downloaded earlier are 100 bases long
-* we need to set the  indexing window size (l) to 100 to match the query read length
-* the default MinHash settings should be fine but you can play with them (`groot index --help`)
+- the metagenomes reads we downloaded earlier are 100 bases long
+- we need to set the indexing window size (l) to 100 to match the query read length
+- the default MinHash settings should be fine but you can play with them (`groot index --help`)
 
 Align the reads against the index:
 
-``` bash
-ls *.fastq | parallel --gnu "groot align -i groot-index -f {} -p 8 -o {/.}-groot-graphs > {/.}.bam"
+```bash
+ls *.fastq | parallel --gnu "groot align -i groot-index -f {} -p 8 -g {/.}-groot-graphs > {/.}.bam"
 ```
 
-* for each sample, the align subcommand produces a BAM file containing all graph traversals for each read
-* each BAM file essentially contains the ARG-derived reads in each sample
-* the graphs (`.gfa`) which had reads align are stored in a separate directory for each sample (`-o {/.}-groot-graphs`)
+- for each sample, the align subcommand produces a BAM file containing all graph traversals for each read
+- each BAM file essentially contains the ARG-derived reads in each sample
+- the graphs (`.gfa`) which had reads align are stored in a separate directory for each sample (`-g {/.}-groot-graphs`)
 
 ### 4.a. Compare ARG diversity
 
@@ -149,9 +150,9 @@ Now that we have classified ARG-derived reads from all of the samples, we can co
 
 ![fig5](http://media.springernature.com/full/springer-static/image/art%3A10.1186%2Fs40168-017-0338-7/MediaObjects/40168_2017_338_Fig5_HTML.gif)
 
- Firstly, calculate the proportion of ARG-derived reads in each sample and save to a csv file:
+Firstly, calculate the proportion of ARG-derived reads in each sample and save to a csv file:
 
-``` bash
+```bash
 while read -r line
 do
     ID=$(echo $line | cut -f1 -d ' ')
@@ -165,7 +166,7 @@ done < samples.txt
 
 Now create a simple box plot using R:
 
-``` r
+```r
 library(ggplot2)
 
 # read in the data and log transform the proportion of ARG classified reads
@@ -197,16 +198,16 @@ The main advantage of GROOT is that it will generate a resistome profile by repo
 
 Let's report the resistome profiles for each of our samples:
 
-``` bash
-ls *.bam | parallel --gnu "groot report -i {} -c 1 --plotCov > {/.}.report"
+```bash
+ls *.bam | parallel --gnu "groot report --bamFile {} -c 1 --plotCov > {/.}.report"
 ```
 
-* `-c 1` tells groot to only report ARGs that have been entirely covered by reads, I.E. a full-length,100% identity match
-* `--plotCov` tells groot to generate coverage plots for each ARG it reports
+- `-c 1` tells groot to only report ARGs that have been entirely covered by reads, I.E. a full-length,100% identity match
+- `--plotCov` tells groot to generate coverage plots for each ARG it reports
 
 We have now generated a resistome profile for each sample, using only full-length ARG sequences (present in the ARG-ANNOT database). We can sum rural/urban resistome profiles with a little bash loop to combine reports:
 
-``` bash
+```bash
 while read -r line
 do
     ID=$(echo $line | cut -f1 -d ' ')
@@ -227,13 +228,13 @@ We can see that the 5' and 3' ends of the genes have low coverage compared to th
 
 We can try 2 things to report more ARGs:
 
-* set the `--lowCov` flag for groot report -> this will report ARGs with no coverage in the first few bases at the 5' or 3' ends
-* re-index the database using a shorter MinHash signature (`-s`) or lower Jaccard similarity threshold (`-j`) -> this will increase the chance of seeding reads that partially cover a gene
+- set the `--lowCov` flag for groot report -> this will report ARGs with no coverage in the first few bases at the 5' or 3' ends
+- re-index the database using a shorter MinHash signature (`-s`) or lower Jaccard similarity threshold (`-j`) -> this will increase the chance of seeding reads that partially cover a gene
 
 Option 2 takes a bit longer as we need to go all the way back in the workflow to indexing, so let's try option 1 for now:
 
-``` bash
-ls *.bam | parallel --gnu "groot report -i {} --lowCov > {/.}.lowCov.report"
+```bash
+ls *.bam | parallel --gnu "groot report --bamFile {} --lowCov > {/.}.lowCov.report"
 while read -r line
 do
     ID=$(echo $line | cut -f1 -d ' ')
@@ -258,7 +259,7 @@ We've now ended up with a lot more ARGs being reported thanks to the `--lowCov` 
 
 The final column of the GROOT report output is a CIGAR-like representation of the covered bases: M=covered D=absent. The read count and coverage (plus the coverage plots) can help us assess the confidence in the reported genes when we use `--lowCov`. We can also check if reported ARGs share classified reads (i.e. multimappers). To compare reads aligning to 2 ARGs, you could try some commands like this:
 
-``` bash
+```bash
 # split the bam by ARG
 bamtools split -in out.bam -reference
 # extract reads aligning to specific ARGs
@@ -267,13 +268,12 @@ bedtools bamtofastq -i ARG27.bam -fq reads-aligned-to-ARG27.fq
 # find matching reads
 bbduk.sh in=reads-aligned-to-ARG1.fq ref=reads-aligned-to-ARG27.fq outm=matched.fq k=100 mm=f
 ```
-* this is a bit clunky and a new groot feature is coming which will do comparisons for us
 
-Now let's try plotting the resistome  profiles:
+Now let's try plotting the resistome profiles:
 
 More to content to come...
 
-***
+---
 
 ## 5. ARG context
 
@@ -281,40 +281,40 @@ Now we have a set of ARGs we know are present in one or more samples, we might w
 
 Download the full ARG-ANNOT set of genes and then index with samtools:
 
-``` bash
+```bash
 wget https://github.com/will-rowe/groot/raw/master/db/full-ARG-databases/arg-annot-db/argannot-args.fna
 samtools faidx argannot-args.fna
 ```
 
 Now we can extract all the genes present in our resistome profiles:
 
-``` bash
+```bash
 samtools faidx argannot-args.fna `cut -f1 combined-profiles.urban.tsv` > urban-args.fna
 samtools faidx argannot-args.fna `cut -f1 combined-profiles.rural.tsv` > rural-args.fna
 ```
 
 Remove any duplicate genes:
 
-``` bash
+```bash
 cat urban-args.fna | seqkit rmdup -s -o urban-args.fna
 cat rural-args.fna | seqkit rmdup -s -o rural-args.fna
 ```
 
 As a first example, let's look at the genomic context of one ARG (`(Bla)OXA-347`) in urban samples. To begin, get the samples that contain this ARG:
 
-``` bash
+```bash
 grep -l "argannot~~~(Bla)OXA-347~~~JN086160:1583-2407" *.lowCov.report | sed 's/.lowCov.report//' > samples-containing-blaOXA-347.list
 ```
 
 We also need to store the reference sequence:
 
-``` bash
+```bash
 samtools faidx argannot-args.fna "argannot~~~(Bla)OXA-347~~~JN086160:1583-2407" > blaOXA-347.fna
 ```
 
 Now we can run metacherchant:
 
-``` bash
+```bash
 while read -r sample
     do
 	metacherchant.sh --tool environment-finder \
@@ -332,17 +332,18 @@ while read -r sample
 
 To classify the contigs assembled around the detected ARGs, try Kraken:
 
-``` bash
+```bash
 while read -r sample
     do
         kraken --threads 8 --preload --fasta-input --db /path/to/minikraken_20141208 metacherchant/${sample}/output/seqs.fasta | kraken-report --db /path/to/minikraken_20141208 > metacherchant/${sample}/${sample}-kraken.report
     done < samples-containing-blaOXA-347.list
 ```
-<sup>\*  you will need to install kraken and download minikraken for this</sup>
+
+<sup>\* you will need to install kraken and download minikraken for this</sup>
 
 To visualise the ARG context, first load the assembly graph into Bandage:
 
-``` bash
+```bash
 Bandage load metacherchant/SRR4454592/output/graph.gfa
 ```
 

@@ -2,7 +2,7 @@
 
 This is a brief overview of the databases used by **GROOT**.
 
-***
+---
 
 ## Overview
 
@@ -12,7 +12,7 @@ The **MSAs** represent a clustered database, each cluster is a collection of seq
 
 A set of clustered databases is provided (use the `groot get` subcommand) or you can generate your own clustered database. To cluster a database yourself, you can use the following commands on any multifasta file containing the sequences you want to use with **GROOT**:
 
-``` bash
+```bash
 mkdir CLUSTERED-DB && cd $_
 
 vsearch --cluster_size /path/to/ARGs.fna --id 0.90 --msaout MSA.tmp
@@ -22,22 +22,21 @@ awk '!a[$0]++ {of="./cluster-" ++fc ".msa"; print $0 >> of ; close(of)}' RS= ORS
 cd ..
 ```
 
-* the above snippet will create a clustered database in the directory CLUSTERED-DB - now you can run `groot index`
+- the above snippet will create a clustered database in the directory CLUSTERED-DB - now you can run `groot index`
 
 ```
-groot index -i ./CLUSTERED-DB
+groot index -m ./CLUSTERED-DB
 ```
-
 
 ## groot-db and groot-core-db
 
 As mentioned earlier, the `groot get` subcommand can download a pre-clustered database for you to use with **GROOT**. The following databases are available:
 
-* arg-annot (default)
-* resfinder
-* card
-* groot-db
-* groot-core-db
+- arg-annot (default)
+- resfinder
+- card
+- groot-db
+- groot-core-db
 
 The `groot-db` and `groot-core-db` are both databases that are derived from ResFinder, ARG-annot and CARD. They have been included after requests by several users for a combination of available **ARG** databases. They were made as follows:
 
