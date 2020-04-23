@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="paper/img/misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
+    <img src="misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
     <h3><a style="color:#D5672C">G</a>raphing <a style="color:#D5672C">R</a>esistance <a style="color:#D5672C">O</a>ut <a style="color:#D5672C">O</a>f me<a style="color:#D5672C">T</a>agenomes</h3>
     <hr>
     <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
@@ -22,7 +22,7 @@
 
 Since version 0.4, `GROOT` will also output the variation graphs which had reads align. These graphs are in [GFA format](https://github.com/GFA-spec/GFA-spec), allowing you to visualise graph alignments using [Bandage](https://github.com/rrwick/Bandage) and determine which variants of a given ARG type are dominant in your metagenomes. Read the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more info.
 
-**Note**: Due to extremely high memory use, the containment search option has been disabled for now (v0.8.5 onwards). I'm hoping to fix this asap and re-introduce the feature. For now, I recommend using a length-filtered read set with `GROOT`.
+Since version 1.0.0, `GROOT` has had a partial re-write (merging features and changes from my [baby groot](https://github.com/will-rowe/baby-groot) project). It now uses the excellent [LSH Ensemble library](https://github.com/ekzhu/lshensemble) as the LSH index, enabling containment search for read seeding. I've also improved my dev know-how and `GROOT` is now more efficient. However, these changes have meant that I've needed to change some of the CLI, so please read the docs.
 
 ## Installation
 
@@ -31,10 +31,8 @@ Check out the [releases](https://github.com/will-rowe/groot/releases) to downloa
 ### Bioconda
 
 ```
-conda install groot
+conda install -c bioconda groot
 ```
-
-> note: if using Conda make sure you have added the [Bioconda](https://bioconda.github.io/) channel first
 
 ### Brew
 
@@ -44,7 +42,7 @@ brew install brewsci/bio/groot
 
 ### Source
 
-`GROOT` is written in Go (v1.10) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
+`GROOT` is written in Go (v1.14) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
 
 ```bash
 # Clone this repository
@@ -73,13 +71,13 @@ go build ./
 groot get -d arg-annot
 
 # Create graphs and index
-groot index -i arg-annot.90 -o groot-index -l 100
+groot index -m arg-annot.90 -i grootIndex -w 100
 
 # Align reads and report
-groot align -i groot-index -f reads.fq | groot report
+groot align -i grootIndex -f reads.fq | groot report
 ```
 
-> note: index the graph using a window size <= your maximum expected read length, so for 100bp reads, use `-l 100`
+> note: it's recommended to index the graph using a window size ~= your maximum expected read length, so for 100bp reads, use `-w 100`
 
 ## Further Information & Citing
 

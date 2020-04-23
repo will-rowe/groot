@@ -67,7 +67,7 @@ var getCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(getCmd)
 	database = getCmd.Flags().StringP("database", "d", "arg-annot", "database to download (please choose: arg-annot/resfinder/card/groot-db/groot-core-db)")
-	identity = getCmd.Flags().StringP("identity", "i", "90", "the sequence identity used to cluster the database (only 90 available atm)")
+	identity = getCmd.Flags().String("identity", "90", "the sequence identity used to cluster the database (only 90 available atm)")
 	dbDir = getCmd.PersistentFlags().StringP("out", "o", ".", "directory to save the database to")
 }
 
@@ -196,5 +196,5 @@ func runGet() {
 		os.Exit(1)
 	}
 	fmt.Printf("database saved to: %v\n", dbSave)
-	fmt.Printf("now run `groot index -i %v` or `groot index --help` for full options\n", dbSave)
+	fmt.Printf("now run `groot index -m %v` or `groot index --help` for full options\n", dbSave)
 }

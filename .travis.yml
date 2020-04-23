@@ -1,18 +1,38 @@
 sudo: required
-dist: precise
+dist: xenial
 
 os:
     - linux
     - osx
+    - windows
 
 language: go
 go:
-- tip # The latest version of Go.
+    - 1.x
 
-install:
- - go get -d -t -v ./...
- - go test -v ./...
- - go build -v ./...
-
-script:
- - sh ./testing/run_travis_tests.sh
+matrix:
+    include:
+        - os: osx
+          install:
+              - go get -d -t -v ./...
+              - go test -v ./...
+              - go build -v ./...
+          script:
+              - cd testing
+              - sh testing/run_travis_tests.sh
+        - os: linux
+          install:
+              - go get -d -t -v ./...
+              - go test -v ./...
+              - go build -v ./...
+          script:
+              - cd testing
+              - sh run_travis_tests.sh
+        - os: windows
+          install:
+              - go get -d -t -v ./...
+              - go test -v ./...
+              - go build -v ./...
+          script:
+              - cd testing
+              - sh run_travis_tests.sh

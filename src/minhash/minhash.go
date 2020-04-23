@@ -1,74 +1,82 @@
-// Package minhash contains a minHash implementation that uses the ntHash rolling hash function
+// Package minhash contains implementations of bottom-k and kmv MinHash algorithms. These implementations use the ntHash rolling hash function.
 package minhash
 
-import (
-	"errors"
-	"math"
+// CANONICAL tell ntHash to return the canonical k-mer (this is used in the KMV sketch)
+const CANONICAL bool = true
 
-	"github.com/will-rowe/ntHash"
-)
-
-// CANONICAL sets whether ntHash will return the canonical k-mer (inspects both strands for each k-mer and returns the lowest hash value)
-const CANONICAL = false
-
-// minHash struct contains all the minimum hash values for a sequence
-type minHash struct {
-	kSize     uint
-	signature []uint64
+// MinHash is an interface to group the different flavours of MinHash implemented here
+type MinHash interface {
+	AddSequence([]byte) error
+	GetSketch() []uint64
 }
 
-// Add a sequence to the minHash
-func (minHash *minHash) Add(sequence []byte) error {
-	// initiate the rolling ntHash
-	hasher, err := ntHash.New(&sequence, minHash.kSize)
-	if err != nil {
-		return err
+// GetReadSketch is a function to sketch a read sequence
+func GetReadSketch(seq []byte, kmerSize, sketchSize uint, kmv bool) ([]uint64, error) {
+
+	// create the MinHash data structure, using the specified algorithm flavour
+	var mh MinHash
+	if kmv {
+		mh = NewKMVsketch(uint(kmerSize), uint(sketchSize))
+	} else {
+		mh = NewKHFsketch(uint(kmerSize), uint(sketchSize))
 	}
-	// get hashed kmers from read
-	var h1 uint32
-	var h2 uint32
-	for hv := range hasher.Hash(CANONICAL) {
-		// for each hashed k-mer, try adding it to the sketch
-		for i := 0; i < len(minHash.signature); i++ {
-			h1 = uint32(hv)
-			h2 = uint32(hv >> 32)
-			newVal := uint64(h1) + (uint64(i) * uint64(h2))
-			// evaluate and add to the signature if it is a minimum
-			if newVal < minHash.signature[i] {
-				minHash.signature[i] = newVal
-			}
+
+	// use the AddSequence method to populate the MinHash
+	err := mh.AddSequence(seq)
+
+	// get the sketch
+	sketch := mh.GetSketch()
+
+	// if the sketch isn't at capacity (in the case of BottomK sketches), fill up the remainder with 0s
+	if kmv && len(sketch) != int(sketchSize) {
+		padding := make([]uint64, int(sketchSize)-len(sketch))
+		for i := 0; i < len(padding); i++ {
+			padding[i] = 0
 		}
+		sketch = append(sketch, padding...)
+
 	}
-	return nil
+
+	// return the MinHash sketch and any error
+	return sketch, err
 }
 
-// Signature returns the current minHash signature (set of minimums)
-func (minHash *minHash) Signature() []uint64 {
-	return minHash.signature
+// seqNT4table is used to convert "ACGTN" to 01234 - from minimap2
+var seqNT4table = [256]uint8{
+	0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 0, 4, 1, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 0, 4, 1, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 }
 
-// Similarity is a method to estimate the Jaccard Similarity using to minHash signatures
-func (minHash *minHash) Similarity(querySig []uint64) (float64, error) {
-	if len(minHash.signature) != len(querySig) {
-		return 0, errors.New("length of minhash signatures do not match")
-	}
-	intersect := 0
-	for i := range minHash.signature {
-		if minHash.signature[i] == querySig[i] {
-			intersect++
-		}
-	}
-	return float64(intersect) / float64(len(minHash.signature)), nil
+// hash64 is a hash function for uint64 encoded k-mers (lifted from minimap2)
+func hash64(key, mask uint64) uint64 {
+	key = (^key + (key << 21)) & mask
+	key = key ^ key>>24
+	key = ((key + (key << 3)) + (key << 8)) & mask
+	key = key ^ key>>14
+	key = ((key + (key << 2)) + (key << 4)) & mask
+	key = key ^ key>>28
+	key = (key + (key << 31)) & mask
+	return key
 }
 
-// NewMinHash initiates a minHash struct and populates the signature with max values
-func NewMinHash(kSize uint, sigSize int) *minHash {
-	signature := make([]uint64, sigSize)
-	for i := range signature {
-		signature[i] = math.MaxUint64
-	}
-	return &minHash{
-		kSize:     kSize,
-		signature: signature,
-	}
+// splitmix64 is a 64-bit finalizer, used here as a second hash func for uint64 endcoded k-mers
+func splitmix64(key uint64) uint64 {
+	key = (key ^ (key >> 31) ^ (key >> 62)) * uint64(0x319642b2d24d8ec3)
+	key = (key ^ (key >> 27) ^ (key >> 54)) * uint64(0x96de1b173f119089)
+	key = key ^ (key >> 30) ^ (key >> 60)
+	return key
 }

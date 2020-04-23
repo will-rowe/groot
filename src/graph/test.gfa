@@ -1,7 +1,7 @@
 H	VN:Z:1
-S	1	ATGT	LN:i:4	
-S	2	A	LN:i:1	
-S	3	TGAAA	LN:i:5	
+S	1	ATGT	LN:i:4	KC:i:100
+S	2	A	LN:i:1	KC:i:500
+S	3	TGAAA	LN:i:5	KC:i:600
 S	4	G	LN:i:1	
 S	5	A	LN:i:1	
 S	6	GATTAAAAGG	LN:i:10	
