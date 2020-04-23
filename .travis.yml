@@ -19,7 +19,7 @@ matrix:
               - go build -v ./...
           script:
               - cd testing
-              - sh testing/run_travis_tests.sh
+              - sh run_travis_tests.sh
         - os: linux
           install:
               - go get -d -t -v ./...
