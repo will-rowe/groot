@@ -1,4 +1,4 @@
-// Copyright © 2017 Will Rowe <will.rowe@stfc.ac.uk>
+// Copyright © 2017 Will Rowe <w.p.m.rowe@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/groot/src/version"
 )
