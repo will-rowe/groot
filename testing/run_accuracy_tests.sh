@@ -5,7 +5,7 @@
 # The reads were generated using randomreads.sh (bbmap) with the command:
 # randomreads.sh ref=../../../../db/full-ARG-databases/arg-annot-db/argannot-args.fna out=${NUM_READS}-test-reads.fq length=$READ_LEN  reads=$NUM_READS maxsnps=0 maxinss=0 maxdels=0 maxsubs=0 adderrors=false
 #
-#
+set -e
 
 # test parameters
 TESTDIR=tmp-for-groot-accuracy
