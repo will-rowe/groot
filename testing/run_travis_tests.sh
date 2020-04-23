@@ -26,13 +26,13 @@ echo "downloading the ARG-annot database..."
 
 # index the ARGannot database
 echo "indexing the ARG-annot database..."
-gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n"\
- ./groot index -m arg-annot.90 -i index -w $READ_LEN -k $K_SIZE -s $SIG_SIZE -p $THREADS
+#gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" \
+./groot index -m arg-annot.90 -i index -w $READ_LEN -k $K_SIZE -s $SIG_SIZE -p $THREADS
 
 # align the test reads
 echo "aligning reads..."
-gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n"\
- ./groot align -i index -f $READS -p $THREADS -t $CT > groot.bam
+#gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" \
+./groot align -i index -f $READS -p $THREADS -t $CT > groot.bam
 
 # report
 echo "reporting..."

@@ -1,14 +1,8 @@
 sudo: required
 dist: xenial
-
-os:
-    - linux
-    - osx
-    - windows
-
 language: go
 go:
-    - 1.x
+    - 1.14.x
 
 matrix:
     include:
@@ -19,16 +13,8 @@ matrix:
               - go build -v ./...
           script:
               - cd testing
-              - sh testing/run_travis_tests.sh
-        - os: linux
-          install:
-              - go get -d -t -v ./...
-              - go test -v ./...
-              - go build -v ./...
-          script:
-              - cd testing
               - sh run_travis_tests.sh
-        - os: windows
+        - os: linux
           install:
               - go get -d -t -v ./...
               - go test -v ./...
