@@ -1,63 +1,41 @@
-// this package is used to process GFA formatted graphs and index them for groot
+// Package graph is used to process graphs. It converts, writes, aligns reads and processes GROOT graphs.
 package graph
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"sort"
 	"strconv"
 	"sync"
-	"time"
 
-	"github.com/biogo/hts/sam"
 	"github.com/will-rowe/gfa"
-	"github.com/will-rowe/groot/src/misc"
+	"github.com/will-rowe/groot/src/lshforest"
 	"github.com/will-rowe/groot/src/seqio"
-	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
-/*
-   GrootGraphNode is a GFA segment (plus the extra info from path, links etc.)
-*/
-type GrootGraphNode struct {
-	SegmentID int
-	Sequence  []byte
-	OutEdges  []int
-	PathIDs   []int       // a reference to the paths that use this segment (equivalent to the linear reference from which this segment is derived) (value corresponds to key in GrootGraph.Paths)
-	Position  map[int]int // the start position of this segment in each reference sequence, using 1-based indexing (lookup key corresponds to key in GrootGraph.Paths)
-	ReadCount int         // used during the alignment to record the number of reads covering a node
-}
-
-// IncrementReadCount uses a mutex to increase the read count of a node safely during alignment
-func (node *GrootGraphNode) IncrementReadCount() {
-	var mutex = &sync.Mutex{}
-	mutex.Lock()
-	node.ReadCount++
-	mutex.Unlock()
-}
-
-/*
-   GrootGraph is the variation graph implementation used by GROOT
-*/
+// GrootGraph is the variation graph implementation used by GROOT
 type GrootGraph struct {
-	GraphID     int
-	SortedNodes []*GrootGraphNode
-	NodeLookup  map[int]int
-	Paths       map[int][]byte // lookup to relate PathIDs in each node to a path name
-	Lengths     map[int]int    // lengths of sequences held in graph (lookup key corresponds to key in Paths)
+	GrootVersion string
+	GraphID      uint32
+	SortedNodes  []*GrootGraphNode  // essentially, this is the graph - a topologically sorted array of nodes
+	Paths        map[uint32][]byte  // lookup to relate PathIDs in each node to a path name
+	Lengths      map[uint32]int     // lengths of sequences held in graph (lookup key corresponds to key in Paths)
+	NodeLookup   map[uint64]int     // this map returns a the position of a node in the SortedNodes array, using the node segmentID as the locator
+	KmerTotal    uint64             // the total number of k-mers projected onto the graph
+	EMiterations int                // the number of EM iterations ran
+	alpha        []float64          // indices match the Paths
+	abundances   map[uint32]float64 // abundances of kept paths, relative to total k-mers processed during sketching
+	grootPaths   grootGraphPaths    // an explicit path through the graph
 }
 
 // CreateGrootGraph is a GrootGraph constructor that takes a GFA instance and stores the info as a graph and then runs a topological sort
 func CreateGrootGraph(gfaInstance *gfa.GFA, id int) (*GrootGraph, error) {
 	// construct an empty graph
 	newGraph := &GrootGraph{
-		GraphID:    id,
-		NodeLookup: make(map[int]int),
-		Paths:      make(map[int][]byte),
-		Lengths:    make(map[int]int),
+		GraphID:    uint32(id),
+		Paths:      make(map[uint32][]byte),
+		Lengths:    make(map[uint32]int),
+		NodeLookup: make(map[uint64]int),
 	}
 	// collect all the segments from the GFA instance and create the nodes
 	segments, err := gfaInstance.GetSegments()
@@ -66,7 +44,9 @@ func CreateGrootGraph(gfaInstance *gfa.GFA, id int) (*GrootGraph, error) {
 	}
 	for nodeIterator, segment := range segments {
 		// check the segment name can be stored as an int
-		id, err := strconv.Atoi(string(segment.Name))
+
+		// TODO: will fix the handling of segmentIDs between GFA and GROOT -- need to use uint64
+		segID, err := strconv.Atoi(string(segment.Name))
 		if err != nil {
 			return nil, fmt.Errorf("could not convert segment name from GFA into an int for groot graph: %v", segment.Name)
 		}
@@ -75,14 +55,27 @@ func CreateGrootGraph(gfaInstance *gfa.GFA, id int) (*GrootGraph, error) {
 		if err := seq.BaseCheck(); err != nil {
 			return nil, err
 		}
-		newNode := &GrootGraphNode{
-			SegmentID: id,
-			Sequence:  seq.Seq,
-			Position:  make(map[int]int),
+		// check if there are optional fields included
+		kmerCount := 0.0
+		kc, err := segment.GetKmerCount()
+		if err != nil {
+			return nil, err
 		}
+		if kc != 0.0 {
+			kmerCount = float64(kc)
+		}
+		newNode := &GrootGraphNode{
+			SegmentID:     uint64(segID),
+			SegmentLength: float64(len(seq.Seq)),
+			Sequence:      seq.Seq,
+			KmerFreq:      kmerCount,
+			Position:      make(map[int]int),
+		}
+
 		// store the new node in the graph and record it's location in the silce by using the NodeLookup map
 		newGraph.SortedNodes = append(newGraph.SortedNodes, newNode)
-		newGraph.NodeLookup[id] = nodeIterator
+		newGraph.NodeLookup[uint64(segID)] = nodeIterator
+		newGraph.KmerTotal += uint64(kmerCount)
 	}
 	// collect all the links from the GFA instance and add edges to the nodes
 	links, err := gfaInstance.GetLinks()
@@ -93,33 +86,38 @@ func CreateGrootGraph(gfaInstance *gfa.GFA, id int) (*GrootGraph, error) {
 		// get the from and to segment IDs
 		fromSegID, err := strconv.Atoi(string(link.From))
 		if err != nil {
-			return nil, fmt.Errorf("could not convert segment name from GFA into an int for groot graph: %v", link.From)
+			return nil, fmt.Errorf("could not convert fromSegID name from GFA into an int for groot graph: %v", link.From)
 		}
 		toSegID, err := strconv.Atoi(string(link.To))
 		if err != nil {
-			return nil, fmt.Errorf("could not convert segment name from GFA into an int for groot graph: %v", link.To)
+			return nil, fmt.Errorf("could not convert toSegID name from GFA into an int for groot graph: %v", link.To)
 		}
 		// add the outEdges
-		nodeLocator := newGraph.NodeLookup[fromSegID]
-		newGraph.SortedNodes[nodeLocator].OutEdges = append(newGraph.SortedNodes[nodeLocator].OutEdges, toSegID)
+		nodeLocator := newGraph.NodeLookup[uint64(fromSegID)]
+		newGraph.SortedNodes[nodeLocator].OutEdges = append(newGraph.SortedNodes[nodeLocator].OutEdges, uint64(toSegID))
 	}
 	// collect all the paths from the GFA instance and add pathIDs to each node
+	// this function also populates the reference Position for each node
 	paths, err := gfaInstance.GetPaths()
 	if err != nil {
 		return nil, err
 	}
-	for pathIterator, path := range paths {
+	for pathIterator := uint32(0); pathIterator < uint32(len(paths)); pathIterator++ {
 		// add the path name to the lookup
-		newGraph.Paths[pathIterator] = path.PathName
-		for _, seg := range path.SegNames {
+		newGraph.Paths[pathIterator] = paths[pathIterator].PathName
+		for _, seg := range paths[pathIterator].SegNames {
 			// strip the plus
 			seg = bytes.TrimSuffix(seg, []byte("+"))
-			id, err := strconv.Atoi(string(seg))
+			segID, err := strconv.Atoi(string(seg))
 			if err != nil {
-				return nil, fmt.Errorf("could not convert segment name from GFA into an int for groot graph: %v", string(seg))
+				return nil, fmt.Errorf("could not convert segment name from GFA path into an int for groot graph: %v\n%v", string(seg), string(paths[pathIterator].PathName))
 			}
-			nodeLocator := newGraph.NodeLookup[id]
+			nodeLocator := newGraph.NodeLookup[uint64(segID)]
 			newGraph.SortedNodes[nodeLocator].PathIDs = append(newGraph.SortedNodes[nodeLocator].PathIDs, pathIterator)
+			// add the first segment of this path to the start nodes
+			//if i == 0 {
+			//	newGraph.startNodes[uint64(segID)] = struct{}{}
+			//}
 		}
 	}
 	// return without toposort if only one node present (graph with single sequence)
@@ -127,22 +125,25 @@ func CreateGrootGraph(gfaInstance *gfa.GFA, id int) (*GrootGraph, error) {
 		err = newGraph.topoSort()
 	}
 	// get and store the lengths of each sequence held in the graph
-	// this function also adds Position to each node of the graph
-	for pathID, _ := range newGraph.Paths {
-		newGraph.Lengths[pathID] = len(newGraph.Graph2Seq(pathID))
+	seqs, err := newGraph.Graph2Seqs()
+	if err != nil {
+		return nil, err
+	}
+	for pathID, path := range seqs {
+		newGraph.Lengths[uint32(pathID)] = len(path)
 	}
 	// return the new GrootGraph
 	return newGraph, err
 }
 
 // topoSort runs a topological sort on the GrootGraph
-func (graph *GrootGraph) topoSort() error {
+func (GrootGraph *GrootGraph) topoSort() error {
 	// copy all of the graph nodes into a map (so we can keep track of what we have processed)
-	nodeMap := make(map[int]*GrootGraphNode)
-	toposortStart := []int{}
-	seenPaths := make(map[int]int)
-	for _, node := range graph.SortedNodes {
-		if len(seenPaths) == len(graph.Paths) {
+	nodeMap := make(map[uint64]*GrootGraphNode)
+	toposortStart := []uint64{}
+	seenPaths := make(map[uint32]int)
+	for _, node := range GrootGraph.SortedNodes {
+		if len(seenPaths) == len(GrootGraph.Paths) {
 			break
 		}
 		// if this node is from a sequence we have not seen yet, mark the node as a starting node for toposort
@@ -159,16 +160,16 @@ func (graph *GrootGraph) topoSort() error {
 		nodeMap[node.SegmentID] = node
 	}
 	// clear the SortedNodes and NodeLookup
-	graph.SortedNodes = []*GrootGraphNode{}
-	graph.NodeLookup = make(map[int]int)
+	GrootGraph.SortedNodes = []*GrootGraphNode{}
+	GrootGraph.NodeLookup = make(map[uint64]int)
 	// run the topological sort  - try starting from each node that was in the first slot of the nodeholder (start of the MSA)
-	seen := make(map[int]struct{})
+	seen := make(map[uint64]struct{})
 	for len(nodeMap) > 1 {
 		for _, start := range toposortStart {
 			if _, ok := nodeMap[start]; !ok {
 				continue
 			}
-			graph.traverse(nodeMap[start], nodeMap, seen)
+			GrootGraph.traverse(nodeMap[start], nodeMap, seen)
 		}
 	}
 	// check all traversals have been taken
@@ -179,7 +180,7 @@ func (graph *GrootGraph) topoSort() error {
 }
 
 //  traverse is a helper method to topologically sort a graph
-func (graph *GrootGraph) traverse(node *GrootGraphNode, nodeMap map[int]*GrootGraphNode, seen map[int]struct{}) {
+func (GrootGraph *GrootGraph) traverse(node *GrootGraphNode, nodeMap map[uint64]*GrootGraphNode, seen map[uint64]struct{}) {
 	// skip if we are already handling the current node
 	if _, ok := seen[node.SegmentID]; ok {
 		return
@@ -189,286 +190,461 @@ func (graph *GrootGraph) traverse(node *GrootGraphNode, nodeMap map[int]*GrootGr
 		// record that we are processing this node
 		seen[node.SegmentID] = struct{}{}
 		// sort the output nodes for this node and then traverse them in reverse order
-		sort.Sort(sort.Reverse(sort.IntSlice(node.OutEdges)))
+		sort.Sort(sort.Reverse(node.OutEdges))
 		for i, j := 0, len(node.OutEdges); i < j; i++ {
 			// check if the outedges have been traversed
 			if _, ok := nodeMap[node.OutEdges[i]]; !ok {
 				continue
 			}
-			graph.traverse(nodeMap[node.OutEdges[i]], nodeMap, seen)
+			GrootGraph.traverse(nodeMap[node.OutEdges[i]], nodeMap, seen)
 		}
 		// delete the node from the temporary holders
 		delete(nodeMap, node.SegmentID)
 		delete(seen, node.SegmentID)
 		// update the sorted node slice and the lookup
-		graph.SortedNodes = append([]*GrootGraphNode{node}, graph.SortedNodes...)
-		graph.NodeLookup[node.SegmentID] = len(nodeMap)
+		GrootGraph.SortedNodes = append([]*GrootGraphNode{node}, GrootGraph.SortedNodes...)
+		GrootGraph.NodeLookup[node.SegmentID] = len(nodeMap)
 	}
 }
 
-// Graph2Seq is a method to convert a variation graph to linear reference sequences
-func (graph *GrootGraph) Graph2Seq(pathID int) []byte {
-	newSequence := []byte{}
-	for _, node := range graph.SortedNodes {
-		for _, id := range node.PathIDs {
-			if id == pathID {
-				// update the Position field of the current node
-				node.Position[pathID] = len(newSequence)
-				// build the sequence
-				newSequence = append(newSequence, node.Sequence...)
-			}
-		}
+// WindowGraph is a method to slide a window over each path through the graph, sketching the paths and getting window information
+func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) chan *lshforest.Key {
+	// get the linear sequences for this graph
+	pathSeqs, err := GrootGraph.Graph2Seqs()
+	if err != nil {
+		panic(err)
 	}
-	return newSequence
-}
 
-// WindowGraph is a method to window every node of the graph, generate minhash signautes and return unique ones and their graph locations
-func (graph *GrootGraph) WindowGraph(windowSize int, kSize uint, sigSize int) <-chan *Window {
-	// generate a hashing function to convert signatures (uint64[]) to a string
-	sigHasher := GenSigHasher(2)
-	// make the channel to send windows over
-	windowChan := make(chan *Window)
-	go func() {
-		defer close(windowChan)
-		// for each reference in the graph, get all the windows possible from every base in every node
-		for pathID := range graph.Paths {
-			for _, node := range graph.SortedNodes {
-				for offset := 0; offset < len(node.Sequence); offset++ {
-					var wg sync.WaitGroup
-					sendPath := make(chan []byte)
-					// launch the DFS
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						_ = graph.recursiveDFS(node, offset, []byte{}, sendPath, windowSize, pathID)
-					}()
-					go func() {
-						wg.Wait()
-						close(sendPath)
-					}()
-					// sigChecker sees if we get multiple signatures for the same node+offset
-					sigChecker := make(map[string]struct{})
-					// get MinHash signature for all the windows possible from the current base in the current node
-					for path := range sendPath {
-						// get a minhash signature
-						windowSeq := seqio.Sequence{Seq: path}
-						sig, err := windowSeq.RunMinHash(kSize, sigSize)
-						misc.ErrorCheck(err)
-						// check if we have seen this signature for this node and offset
-						hashedSig := sigHasher(sig)
-						if _, ok := sigChecker[hashedSig]; !ok {
-							// add it to the checker
-							sigChecker[hashedSig] = struct{}{}
-							// create a GrootGraph window
-							newWindow := &Window{
-								GraphID: graph.GraphID,
-								Node:    node.SegmentID,
-								OffSet:  offset,
-								Sig:     sig,
-							}
-							// send window
-							windowChan <- newWindow
+	// this method returns a channel, which receives windows as they are made
+	windowChan := make(chan *lshforest.Key)
+	var wg sync.WaitGroup
+	wg.Add(len(GrootGraph.Paths))
+
+	// window each path
+	for pathID := range GrootGraph.Paths {
+		go func(pathID uint32) {
+			defer wg.Done()
+			// get the length of the linear reference for this path
+			pathLength := GrootGraph.Lengths[pathID]
+
+			// for each base in the linear reference sequence, get the segmentID and offset of its location in the graph
+			segs := make([]uint64, pathLength, pathLength)
+			offSets := make([]uint32, pathLength, pathLength)
+			iterator := 0
+			for _, node := range GrootGraph.SortedNodes {
+				for _, id := range node.PathIDs {
+					if id == pathID {
+						for offset := uint32(0); offset < uint32(len(node.Sequence)); offset++ {
+							segs[iterator] = node.SegmentID
+							offSets[iterator] = offset
+							iterator++
 						}
 					}
 				}
 			}
-		}
+
+			// get the sequence for this path
+			sequence := pathSeqs[pathID]
+
+			// window the sequence
+			numWindows := pathLength - windowSize + 1
+			for i := 0; i < numWindows; i++ {
+
+				// sketch the window
+				windowSeq := seqio.Sequence{Seq: sequence[i : i+windowSize]}
+				sketch, err := windowSeq.RunMinHash(kmerSize, sketchSize, false, nil)
+				if err != nil {
+					panic(err)
+				}
+
+				// get the nodes in this window (i.e. the graph subpath)
+				subPath := segs[i : i+windowSize]
+
+				// convert the subPath to a map of contained nodes in this window
+				ContainedNodes := make(map[uint64]float64)
+				for _, y := range subPath {
+					ContainedNodes[uint64(y)]++
+				}
+
+				// populate the window struct
+				newWindow := &lshforest.Key{
+					GraphID:        GrootGraph.GraphID,
+					Node:           segs[i],
+					OffSet:         offSets[i],
+					ContainedNodes: ContainedNodes,
+					Ref:            []uint32{pathID},
+					Sketch:         sketch,
+				}
+
+				// send this window
+				windowChan <- newWindow
+			}
+		}(pathID)
+	}
+	go func() {
+		wg.Wait()
+		close(windowChan)
 	}()
-	return windowChan
-}
 
-func (graph *GrootGraph) recursiveDFS(currentNode *GrootGraphNode, offset int, path []byte, sendPath chan []byte, windowSize, pathID int) bool {
-	// a switch to halt the current path traversal upon exact alignment covering whole read
-	windowComplete := false
-	// end the DFS if this node is not derived from the pathID
-	nodeOK := false
-	for _, ID := range currentNode.PathIDs {
-		if ID == pathID {
-			nodeOK = true
-			break
-		}
-	}
-	if nodeOK == false {
-		return false
-	}
-	// iterate over the sequence
-	for _, base := range currentNode.Sequence[offset:] {
-		// update the path
-		path = append(path, base)
-		// end the DFS if we have traversed enough bases to equal the window size
-		if len(path) == windowSize {
-			pathCopy := make([]byte, len(path))
-			for i, j := range path {
-				pathCopy[i] = j
+	// receive each window from the graph, combining windows with the same sketch
+	sketchSeen := make(map[string]*lshforest.Key)
+	for window := range windowChan {
+		stringifiedSketch := lshforest.CompressSketch2String(window.Sketch)
+
+		// identical sketch found, so combine windows
+		if existingWindow, ok := sketchSeen[stringifiedSketch]; ok {
+
+			// add nodes to the contained nodes list
+			for node := range window.ContainedNodes {
+				existingWindow.ContainedNodes[node]++
 			}
-			sendPath <- pathCopy
-			return true
+
+			// add pathID
+			existingWindow.Ref = append(existingWindow.Ref, window.Ref...)
+		} else {
+			sketchSeen[stringifiedSketch] = window
 		}
 	}
-	// end the DFS if there are no out edges
-	if len(currentNode.OutEdges) == 0 {
-		return false
-	}
-	// else, continue along the current traversal
-	for _, neighbourNode := range currentNode.OutEdges {
-		nodeLocator := graph.NodeLookup[neighbourNode]
-		nextNode := graph.SortedNodes[nodeLocator]
-		if result := graph.recursiveDFS(nextNode, 0, path, sendPath, windowSize, pathID); result == true {
-			windowComplete = true
+
+	// this method returns a channel, which receives windows as they are made
+	windowChan2 := make(chan *lshforest.Key)
+	var wg2 sync.WaitGroup
+	wg2.Add(1)
+	go func() {
+		for _, window := range sketchSeen {
+			windowChan2 <- window
 		}
-	}
-	return windowComplete
+		wg2.Done()
+	}()
+
+	go func() {
+		wg2.Wait()
+		close(windowChan2)
+	}()
+
+	return windowChan2
 }
 
-/// GenSigHasher generates a hashing function to convert a MinHash signature to a string so that we can use it as a map key and check for duplicates quickly
-func GenSigHasher(hashValueSize int) func([]uint64) string {
-	return func(sig []uint64) string {
-		hashedSig := make([]byte, hashValueSize*len(sig))
-		buf := make([]byte, 8)
-		for i, v := range sig {
-			// use the ByteOrder interface to write binary data
-			// use the LittleEndian implementation and call the Put method
-			binary.LittleEndian.PutUint64(buf, v)
-			copy(hashedSig[i*hashValueSize:(i+1)*hashValueSize], buf[:hashValueSize])
-		}
-		return string(hashedSig)
-	}
-}
+/*
+TEST: incrementing any node belonging to a sketch
+TODO: if this works, clean up the explanation / comments / variable names
+*/
+func (GrootGraph *GrootGraph) IncrementSubPath(ContainedNodes map[uint64]float64, numKmers float64) error {
 
-// DumpGraph is a method to save a GrootGraph in GFA format
-func (graph *GrootGraph) DumpGraph(dirName string) (int, error) {
-	// a flag to prevent dumping graphs which had no reads align
-	graphUsed := false
-	t := time.Now()
-	stamp := fmt.Sprintf("variation graph created by groot at: %v", t.Format("Mon Jan _2 15:04:05 2006"))
-	// create a GFA instance
-	newGFA := gfa.NewGFA()
-	_ = newGFA.AddVersion(1)
-	newGFA.AddComment([]byte(stamp))
-	// transfer all the GrootGraphNode content to the GFA instance
-	for _, node := range graph.SortedNodes {
-		// record if this graph has had reads align
-		if (graphUsed == false) && (node.ReadCount > 0) {
-			graphUsed = true
-		}
-		segID := []byte(strconv.Itoa(node.SegmentID))
-		// create the segment
-		seg, err := gfa.NewSegment(segID, []byte(node.Sequence))
-		if err != nil {
-			return 0, err
-		}
-		// I'm weighting the RC so that bandage will display the depth nicely for the graph paths
-		readCount := fmt.Sprintf("RC:i:%d", (node.ReadCount * len(node.Sequence)))
-		// FragCount is the raw readcount
-		fragCount := fmt.Sprintf("FC:i:%d", node.ReadCount)
-		ofs, err := gfa.NewOptionalFields([]byte(readCount), []byte(fragCount))
-		if err != nil {
-			return 0, err
-		}
-		seg.AddOptionalFields(ofs)
-		seg.Add(newGFA)
-		// create the links
-		for _, outEdge := range node.OutEdges {
-			toSeg := []byte(strconv.Itoa(outEdge))
-			link, err := gfa.NewLink(segID, []byte("+"), toSeg, []byte("+"), []byte("0M"))
+	// check the ContainedNodes contains segments
+	if len(ContainedNodes) < 1 {
+		return fmt.Errorf("ContainedNodes encountered that does not include any segments")
+	}
+
+	// if the ContainedNodes is only one segment, then it is straightforward to increment
+	if len(ContainedNodes) == 1 {
+		for nodeID := range ContainedNodes {
+			node, err := GrootGraph.GetNode(nodeID)
 			if err != nil {
-				return 0, err
+				return fmt.Errorf("could not perform nodelookup to increment ContainedNodes weight")
 			}
-			link.Add(newGFA)
+
+			// give this segment all the k-mers for this sketch
+			if err := node.IncrementKmerFreq(numKmers); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// otherwise, there are multiple segments in the path and we now work out the proportion of k-mer coverage belonging to each segment
+
+	// single pass to get total length of ContainedNodes
+	totalLength := 0.0
+	for segment := range ContainedNodes {
+		node, err := GrootGraph.GetNode(segment)
+		if err != nil {
+			return err
+		}
+		totalLength += node.SegmentLength
+	}
+
+	// now iterate over the segments again, incrementing their weights
+	for segment, segCount := range ContainedNodes {
+		node, err := GrootGraph.GetNode(segment)
+		if err != nil {
+			return err
+		}
+		kmerShare := ((node.SegmentLength / totalLength) * numKmers) * float64(segCount)
+		if err := node.IncrementKmerFreq(kmerShare); err != nil {
+			return err
 		}
 	}
-	// don't save the graph if no reads aligned
-	if graphUsed == false {
-		return 0, nil
+
+	// record the number of kmers projected onto the graph
+	GrootGraph.IncrementKmerCount(uint64(numKmers))
+
+	return nil
+}
+
+/*
+// IncrementSubPath is a method to adjust the weight of segments within a ContainedNodes through the graph
+//  - given a ContainedNodes through a graph, the offset in the first segment, and the number of k-mers in this ContainedNodes
+//  - increment the weight of each segment contained in that ContainedNodes by their share of the k-mer coverage for the window
+func (GrootGraph *GrootGraph) IncrementSubPath(ContainedNodes []uint64, offSet uint32, numKmers float64) error {
+
+	// check the ContainedNodes contains segments
+	if len(ContainedNodes) < 1 {
+		return fmt.Errorf("ContainedNodes encountered that does not include any segments")
 	}
-	// create the paths
-	for pathID, pathName := range graph.Paths {
-		segments, overlaps := [][]byte{}, [][]byte{}
-		for _, node := range graph.SortedNodes {
+
+	// if the ContainedNodes is only one segment, then it is straightforward to increment
+	if len(ContainedNodes) == 1 {
+		node, err := GrootGraph.GetNode(ContainedNodes[0])
+		if err != nil {
+			return fmt.Errorf("could not perform nodelookup to increment ContainedNodes weight")
+		}
+
+		// give this segment all the k-mers for this sketch
+		if err := node.IncrementKmerFreq(numKmers); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// otherwise, there are multiple segments in the path and we now work out the proportion of k-mer coverage belonging to each segment
+	segLengths := make([]float64, len(ContainedNodes))
+	kmerShare := make([]float64, len(ContainedNodes))
+	totalLength := 0.0
+
+	// get all the segment lengths in the ContainedNodes
+	for i := 0; i < len(ContainedNodes); i++ {
+		node, err := GrootGraph.GetNode(ContainedNodes[i])
+		if err != nil {
+			return err
+		}
+		if (i == 0) && (offSet != 0) {
+			segLengths[i] = node.SegmentLength - float64(offSet) // special case with first segment in the case of an offset
+		} else {
+			segLengths[i] = node.SegmentLength
+		}
+		totalLength += segLengths[i]
+	}
+
+	// work out how many k-mers each segment gets
+	// TODO: without knowing read length, the final segment may get a disproportionate number of k-mers -- look for alternatives to address this
+	for i := 0; i < len(ContainedNodes); i++ {
+		kmerShare[i] = (segLengths[i] / totalLength) * numKmers
+	}
+
+	// now iterate over the segments again, incrementing their weights
+	for i := 0; i < len(ContainedNodes); i++ {
+		node, err := GrootGraph.GetNode(ContainedNodes[i])
+		if err != nil {
+			return err
+		}
+		if err := node.IncrementKmerFreq(kmerShare[i]); err != nil {
+			return err
+		}
+	}
+
+	// record the number of kmers projected onto the graph
+	GrootGraph.IncrementKmerCount(uint64(numKmers))
+
+	return nil
+}
+*/
+
+// Prune is a method to remove paths and segments from the graph if they have insufficient coverage
+// returns false if pruning results in no paths through the graph remaining
+func (GrootGraph *GrootGraph) Prune(minKmerCoverage float64) bool {
+	removePathID := make(map[uint32]struct{})
+	removeNode := make(map[uint64]struct{})
+
+	// first pass through the graph
+	for _, node := range GrootGraph.SortedNodes {
+
+		// get the per-base k-mer frequency for the node
+		perbaseCoverage := node.KmerFreq / node.SegmentLength
+
+		// if the coverage is too low for this node, add the segmentID and the contained pathIDs to the removal lists
+		if perbaseCoverage < minKmerCoverage {
+			for _, id := range node.PathIDs {
+				removePathID[id] = struct{}{}
+				removeNode[node.SegmentID] = struct{}{}
+			}
+		}
+	}
+
+	// if all the paths need removing, just exit now!
+	if len(removePathID) == len(GrootGraph.Paths) {
+		return false
+	}
+
+	// if it doesn't need pruning, return true
+	if len(removeNode) == 0 {
+		return true
+	}
+
+	// second pass through the graph to prune all the marked nodes and paths
+	// TODO: I'm just creating a new slice at the moment and copying nodes which aren't marked
+	// TODO: shall I try popping elements out of the original slices instead -- is that more efficient?
+	for i, node := range GrootGraph.SortedNodes {
+
+		// remove marked paths
+		updatedPathIDs := make([]uint32, 0, len(node.PathIDs))
+		for _, id := range node.PathIDs {
+			if _, marked := removePathID[id]; !marked {
+				updatedPathIDs = append(updatedPathIDs, id)
+			}
+		}
+		node.PathIDs = updatedPathIDs
+
+		// delete any marked nodes
+		if _, marked := removeNode[node.SegmentID]; marked {
+
+			// TODO: I've set the node to nil in the sorted node array - in order to keep the NodeLookup in order. But this isn't pretty and now requires you to check for nil when using the SortedNodes array
+			GrootGraph.SortedNodes[i].Marked = true
+			delete(GrootGraph.NodeLookup, node.SegmentID)
+		}
+
+		// remove any edges referencing deleted nodes
+		updatedEdges := make([]uint64, 0, len(node.OutEdges))
+		for _, edge := range node.OutEdges {
+			if _, marked := removeNode[edge]; !marked {
+				updatedEdges = append(updatedEdges, edge)
+			}
+		}
+		node.OutEdges = updatedEdges
+	}
+
+	// if a path was removed by pruning, set it's length to 0
+	for id := range removePathID {
+		if _, path := GrootGraph.Paths[id]; path {
+
+			//delete(GrootGraph.Paths, id)
+			GrootGraph.Lengths[id] = 0
+		}
+	}
+	return true
+}
+
+// GetNode takes a nodeID and returns a pointer to the corresponding node struct in the graph
+// Note: this is method does not allow concurrent map access
+func (GrootGraph *GrootGraph) GetNode(nodeID uint64) (*GrootGraphNode, error) {
+	NodeLookup, ok := GrootGraph.NodeLookup[nodeID]
+	if !ok {
+		return nil, fmt.Errorf("can't find node %d in graph", nodeID)
+	}
+	return GrootGraph.SortedNodes[NodeLookup], nil
+}
+
+/*
+// GetStartNodes is a method to return a slice of all the node ids which are the first node in a path
+func (GrootGraph *GrootGraph) GetStartNodes() ([]uint64, error) {
+	if len(GrootGraph.startNodes) == 0 {
+		return nil, fmt.Errorf("this graph has no paths")
+	}
+	// convert the startingNodes from map keys into a slice
+	startingNodes := []uint64{}
+	for i := range GrootGraph.startNodes {
+		startingNodes = append(startingNodes, i)
+	}
+	if len(startingNodes) == 0 {
+		return nil, fmt.Errorf("this graph has no paths")
+	}
+	return startingNodes, nil
+}
+*/
+
+// RemoveDeadPaths is a method to remove pathIDs from nodes if the path is no longer present in the graph
+func (GrootGraph *GrootGraph) RemoveDeadPaths() error {
+	for _, node := range GrootGraph.SortedNodes {
+
+		// some nodes will be marked for skipping after pruning, ignore these
+		if node.Marked {
+			continue
+		}
+		updatedPathIDs := []uint32{}
+		for _, pathID := range node.PathIDs {
+			if _, ok := GrootGraph.Paths[pathID]; ok {
+				updatedPathIDs = append(updatedPathIDs, pathID)
+			}
+		}
+		node.PathIDs = updatedPathIDs
+	}
+	return GrootGraph.GetPaths()
+}
+
+// GetPaths is a method to get the paths from a graph
+func (GrootGraph *GrootGraph) GetPaths() error {
+	if len(GrootGraph.Paths) == 0 {
+		return fmt.Errorf("no paths recorded in current graph")
+	}
+	if GrootGraph.abundances == nil {
+		GrootGraph.abundances = make(map[uint32]float64)
+	}
+	GrootGraph.grootPaths = make(grootGraphPaths, len(GrootGraph.Paths))
+	counter := 0
+
+	// TODO: does it make the most sense to loop this way? I.E. loop entire node set for each path?
+	for pathID, pathName := range GrootGraph.Paths {
+		segIDs := []uint64{}
+		segSeqs := [][]byte{}
+		refLength := 0
+		for _, node := range GrootGraph.SortedNodes {
+
+			// some nodes will be marked for skipping after pruning, ignore these
+			//if node.Marked {
+			//	continue
+			//}
+
+			// if this node is in the path, get the deets
 			for _, id := range node.PathIDs {
 				if id == pathID {
-					segment := strconv.Itoa(node.SegmentID) + "+"
-					overlap := strconv.Itoa(len(node.Sequence)) + "M"
-					segments = append(segments, []byte(segment))
-					overlaps = append(overlaps, []byte(overlap))
-					break
+
+					// update the Position field of the current node with the current path
+					node.Position[int(pathID)] = refLength
+					refLength += len(node.Sequence)
+
+					// build the path
+					segIDs = append(segIDs, node.SegmentID)
+					segSeqs = append(segSeqs, node.Sequence)
 				}
 			}
 		}
-		// add the path
-		path, err := gfa.NewPath(pathName, segments, overlaps)
-		if err != nil {
-			return 0, err
+		if _, ok := GrootGraph.abundances[pathID]; !ok {
+			GrootGraph.abundances[pathID] = 0.0
 		}
-		path.Add(newGFA)
+
+		// store this path
+		GrootGraph.grootPaths[counter] = &grootGraphPath{pathID: pathID, name: pathName, nodes: segIDs, sequences: segSeqs, abundance: GrootGraph.abundances[pathID]}
+		counter++
 	}
-	// create a gfaWriter and write the GFA instance
-	firstSeqID := graph.Paths[0]
-	if bytes.Contains(firstSeqID, []byte("/")) {
-		firstSeqID = bytes.Replace(firstSeqID, []byte("/"), []byte(""), -1)
-	}
-	if bytes.Contains(firstSeqID, []byte(":")) {
-		firstSeqID = bytes.Replace(firstSeqID, []byte(":"), []byte(""), -1)
-	}
-	fileName := fmt.Sprintf("%v/%v-groot-graph.gfa", dirName, string(firstSeqID))
-	outfile, err := os.Create(fileName)
-	if err != nil {
-		return 0, err
-	}
-	defer outfile.Close()
-	writer, err := gfa.NewWriter(outfile, newGFA)
-	if err != nil {
-		return 0, err
-	}
-	err = newGFA.WriteGFAContent(writer)
-	return 1, nil
+	// sort the paths
+	sort.Sort(GrootGraph.grootPaths)
+	return nil
 }
 
-/*
-  A struct to store multiple graphs
-*/
-type GraphStore map[int]*GrootGraph
+// Graph2Seqs is a method to convert a variation graph to linear reference sequences
+func (GrootGraph *GrootGraph) Graph2Seqs() (map[uint32][]byte, error) {
 
-// Dump is a method to save a GrootGraph to file
-func (graphStore *GraphStore) Dump(path string) error {
-	b, err := msgpack.Marshal(graphStore)
-	if err != nil {
-		return err
+	// get the paths
+	if err := GrootGraph.GetPaths(); err != nil {
+		return nil, err
 	}
-	return ioutil.WriteFile(path, b, 0644)
-}
 
-// Load is a method to load a GrootGraph from file
-func (graphStore *GraphStore) Load(path string) error {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	return msgpack.Unmarshal(b, graphStore)
-}
+	// create the map - the keys link the sequence to pathID
+	seqs := make(map[uint32][]byte)
 
-// GetRefs is a method to convert all paths held in graphStore to sam.References
-func (graphStore GraphStore) GetRefs() (map[int][]*sam.Reference, error) {
-	references := make(map[int][]*sam.Reference)
-	for graphID, grootGraph := range graphStore {
-		references[graphID] = make([]*sam.Reference, len(grootGraph.Paths))
-		for pathID, path := range grootGraph.Paths {
-			reference, err := sam.NewReference(string(path), "", "", grootGraph.Lengths[pathID], nil, nil)
-			if err != nil {
-				return nil, err
-			}
-			references[graphID][pathID] = reference
+	// for each path, combine the segment sequences, add to the map
+	for _, path := range GrootGraph.grootPaths {
+		newSeq := []byte{}
+		for i := 0; i < len(path.sequences); i++ {
+			newSeq = append(newSeq, path.sequences[i]...)
 		}
+		seqs[path.pathID] = newSeq
 	}
-	return references, nil
+	return seqs, nil
 }
 
-/*
-  A struct to hold graph window information (for minhashing)
-*/
-type Window struct {
-	GraphID int
-	Node    int
-	OffSet  int
-	Sig     []uint64
+// IncrementKmerCount is a method to increment the counter for the number of kmers projected onto the graph
+func (GrootGraph *GrootGraph) IncrementKmerCount(increment uint64) {
+	GrootGraph.KmerTotal += increment
 }

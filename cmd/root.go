@@ -1,4 +1,4 @@
-// Copyright © 2017 Will Rowe <will.rowe@stfc.ac.uk>
+// Copyright © 2020 Will Rowe <w.p.m.rowe@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,10 +29,10 @@ import (
 
 // the command line arguments
 var (
-	proc           *int    // number of processors to use
-	logFile        *string // name to use for log file
-	profiling      *bool   // create profile for go pprof
-	defaultLogFile = "./groot.log"
+	indexDir  *string // directory for groot to write/read index files
+	logFile   *string // name to use for log file
+	proc      *int    // number of processors to use
+	profiling *bool   // create profile for go pprof
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -55,10 +55,7 @@ var RootCmd = &cobra.Command{
  with aligned reads.`,
 }
 
-/*
-  A function to add all child commands to the root command and sets flags appropriately
-*/
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute is a function to add all child commands to the root command and sets flags appropriately
 func Execute() {
 	// launch subcommand
 	if err := RootCmd.Execute(); err != nil {
@@ -67,11 +64,10 @@ func Execute() {
 	}
 }
 
-/*
-  A function to initialise the command line arguments
-*/
+// init the command line arguments
 func init() {
+	indexDir = RootCmd.PersistentFlags().StringP("indexDir", "i", "", "directory for to write/read the GROOT index files")
+	logFile = RootCmd.PersistentFlags().String("log", "groot.log", "filename for log file")
 	proc = RootCmd.PersistentFlags().IntP("processors", "p", 1, "number of processors to use")
-	logFile = RootCmd.PersistentFlags().StringP("logFile", "y", defaultLogFile, "filename for log file")
 	profiling = RootCmd.PersistentFlags().Bool("profiling", false, "create the files needed to profile GROOT using the go tool pprof")
 }

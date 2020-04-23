@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="paper/img/misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
+    <img src="misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
     <h3><a style="color:#D5672C">G</a>raphing <a style="color:#D5672C">R</a>esistance <a style="color:#D5672C">O</a>ut <a style="color:#D5672C">O</a>f me<a style="color:#D5672C">T</a>agenomes</h3>
     <hr>
     <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
@@ -12,7 +12,7 @@
     <a href="https://media.giphy.com/media/3o7budMRwZvNGJ3pyE/giphy.gif"><img src="https://img.shields.io/badge/i%20am-groot-green.svg" alt="bioconda"></a>
 </div>
 
-***
+---
 
 ## Overview
 
@@ -22,7 +22,7 @@
 
 Since version 0.4, `GROOT` will also output the variation graphs which had reads align. These graphs are in [GFA format](https://github.com/GFA-spec/GFA-spec), allowing you to visualise graph alignments using [Bandage](https://github.com/rrwick/Bandage) and determine which variants of a given ARG type are dominant in your metagenomes. Read the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest) for more info.
 
-Since version 0.8.0, `GROOT` can now optionally use an [LSH Ensemble](https://ekzhu.github.io/datasketch/lshensemble.html) index to enable containment searching. This is thanks to the excellent [method](http://www.vldb.org/pvldb/vol9/p1185-zhu.pdf) and [implementation](https://github.com/ekzhu/lshensemble) of Erkang Zhu. This new index allows the reads of varying read length to be queried against **groot graphs**.
+Since version 1.0.0, `GROOT` has had a partial re-write (merging features and changes from my [baby groot](https://github.com/will-rowe/baby-groot) project). It now uses the excellent [LSH Ensemble library](https://github.com/ekzhu/lshensemble) as the LSH index, enabling containment search for read seeding. I've also improved my dev know-how and `GROOT` is now more efficient. However, these changes have meant that I've needed to change some of the CLI, so please read the docs.
 
 ## Installation
 
@@ -31,10 +31,8 @@ Check out the [releases](https://github.com/will-rowe/groot/releases) to downloa
 ### Bioconda
 
 ```
-conda install groot
+conda install -c bioconda groot
 ```
-
-> note: if using Conda make sure you have added the [Bioconda](https://bioconda.github.io/) channel first
 
 ### Brew
 
@@ -44,7 +42,7 @@ brew install brewsci/bio/groot
 
 ### Source
 
-`GROOT` is written in Go (v1.10) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
+`GROOT` is written in Go (v1.14) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
 
 ```bash
 # Clone this repository
@@ -64,7 +62,6 @@ go build ./
 ./groot --help
 ```
 
-
 ## Quick Start
 
 `GROOT` is called by typing **groot**, followed by the subcommand you wish to run. There are three main subcommands: **index**, **align** and **report**. This quick start will show you how to get things running but it is recommended to follow the [documentation](http://groot-documentation.readthedocs.io/en/latest/?badge=latest).
@@ -74,21 +71,13 @@ go build ./
 groot get -d arg-annot
 
 # Create graphs and index
-groot index -i arg-annot.90 -o groot-index -l 100
+groot index -m arg-annot.90 -i grootIndex -w 100
 
 # Align reads and report
-groot align -i groot-index -f reads.fq | groot report
+groot align -i grootIndex -f reads.fq | groot report
 ```
->note: index the graph using a window size <= your maximum expected read length, so for 100bp reads, use `-l 100`
 
-If you anticipate variable read lengths, index the graphs for containment searching:
-
-```bash
-# Create graphs and index for containment searching
-groot index -i arg-annot.90 -o groot-index -l 100 --containment -j 0.5
-```
->note: the above command will allow you to align reads of any length (up to `-l 100`) to the graphs, within a containment threshold of 0.5 (`-j 0.5`)
-
+> note: it's recommended to index the graph using a window size ~= your maximum expected read length, so for 100bp reads, use `-w 100`
 
 ## Further Information & Citing
 
