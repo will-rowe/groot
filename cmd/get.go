@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"archive/tar"
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
@@ -29,8 +30,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/mholt/archiver"
 	"github.com/spf13/cobra"
+	"github.com/will-rowe/groot/src/version"
 )
 
 // available databases to download
@@ -44,8 +45,8 @@ var md5sums = map[string]string{
 	"groot-core-db.90": "f3cac49ff44624a26ea2d92171a73174",
 }
 
-// url to download databases from
-var dbUrl = "https://github.com/will-rowe/groot/raw/master/db/clustered-ARG-databases/"
+// dbUrl to download databases from
+var dbURL = fmt.Sprintf("https://github.com/will-rowe/groot/raw/master/db/clustered-ARG-databases/%v/", version.VERSION)
 
 // the command line arguments
 var (
@@ -159,9 +160,9 @@ func runGet() {
 	// download the db
 	fmt.Printf("downloading the pre-clustered %v database...\n", *database)
 	dbName := fmt.Sprintf("%v.%v", *database, *identity)
-	dbUrl += dbName
-	dbUrl += ".tar"
-	if err := DownloadFile("tmp.tar", dbUrl); err != nil {
+	dbURL += dbName
+	dbURL += ".tar"
+	if err := DownloadFile("tmp.tar", dbURL); err != nil {
 		fmt.Println("could not download the tarball")
 		fmt.Println(err)
 		os.Exit(1)
@@ -173,7 +174,15 @@ func runGet() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	if err := archiver.Unarchive("tmp.tar", "tmp"); err != nil {
+	fh, err := os.Open("tmp.tar")
+	if err != nil {
+		fmt.Println("could not unpack the tarball")
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer fh.Close()
+
+	if err := Untar("tmp", fh); err != nil {
 		fmt.Println("could not unpack the tarball")
 		fmt.Println(err)
 		os.Exit(1)
@@ -197,4 +206,42 @@ func runGet() {
 	}
 	fmt.Printf("database saved to: %v\n", dbSave)
 	fmt.Printf("now run `groot index -m %v` or `groot index --help` for full options\n", dbSave)
+}
+
+// Untar will untar an archive
+func Untar(dst string, fileReader io.Reader) error {
+	if err := os.MkdirAll(dst, os.FileMode(0755)); err != nil {
+		return err
+	}
+
+	tarBallReader := tar.NewReader(fileReader)
+	for {
+		header, err := tarBallReader.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		filename := fmt.Sprintf("%v/%v", dst, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(filename, os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			writer, err := os.Create(filename)
+			if err != nil {
+				return err
+			}
+			io.Copy(writer, tarBallReader)
+			if err := os.Chmod(filename, os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+			writer.Close()
+		default:
+			return fmt.Errorf("unable to untar type : %c in file %s", header.Typeflag, filename)
+		}
+	}
+	return nil
 }
