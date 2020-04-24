@@ -74,7 +74,7 @@ func runSketch() {
 
 	// start the sketch sub command
 	start := time.Now()
-	log.Printf("i am groot (version %s)", version.GetVersion)
+	log.Printf("i am groot (version %s)", version.GetVersion())
 	log.Printf("starting the sketch subcommand")
 
 	// check the supplied files and then log some stuff
@@ -91,8 +91,8 @@ func runSketch() {
 	log.Print("loading the index information...")
 	info := new(pipeline.Info)
 	misc.ErrorCheck(info.Load(*indexDir + "/groot.gg"))
-	if info.Version != version.GetVersion {
-		misc.ErrorCheck(fmt.Errorf("the groot index was created with a different version of groot (you are currently using version %v)", version.GetVersion))
+	if info.Version != version.GetVersion() {
+		misc.ErrorCheck(fmt.Errorf("the groot index was created with a different version of groot (you are currently using version %v)", version.GetVersion()))
 	}
 	log.Printf("\tk-mer size: %d\n", info.KmerSize)
 	log.Printf("\tsketch size: %d\n", info.SketchSize)

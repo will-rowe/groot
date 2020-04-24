@@ -110,7 +110,7 @@ func runReport() {
 	logFH := misc.StartLogging(*logFile)
 	defer logFH.Close()
 	log.SetOutput(logFH)
-	log.Printf("i am groot (version %s)", version.GetVersion)
+	log.Printf("i am groot (version %s)", version.GetVersion())
 	log.Printf("starting the report subcommand")
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")

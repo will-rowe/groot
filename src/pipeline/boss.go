@@ -55,7 +55,7 @@ func (theBoss *theBoss) mapReads() error {
 	theBoss.alignments = make(chan *sam.Record, BUFFERSIZE)
 
 	// get program info for SAM header (unique ID, name, command, previous program ID, version)
-	programInfo := sam.NewProgram("1", "groot", "groot align", "", version.GetVersion)
+	programInfo := sam.NewProgram("1", "groot", "groot align", "", version.GetVersion())
 
 	// get some readgroup information TODO: set this properly
 	rg, err := sam.NewReadGroup("readsID", "", "", "", "groot align", "illumina", "", "sampleID", "", "", time.Now(), 1000)
