@@ -35,4 +35,5 @@ message Key {
 	bool RC = 6; // identifies if the read has been reverse complemented (NOT USED)
     repeated uint64 Sketch = 7; // the sketch of this graph window
     double Freq = 8; // records the number of k-mers this graph window has received during read mapping
+    uint32 MergeSpan = 9; // indicates maximum distance between graph windows this key represents (used in window merging if sketches identical)
 }

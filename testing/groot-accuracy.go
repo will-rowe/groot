@@ -72,7 +72,7 @@ func main() {
 	fmt.Printf("%.0f\t%.2f%%\t\tunaligned reads\n", unAligned, percUnaligned)
 
 	// record false negatives and false positives
-	correctAligned, correctStart, fPos, fNeg := 0.0, 0.0, 0.0, 0.0
+	correctAligned, correctStart, fPos := 0.0, 0.0, 0.0
 	for read, hits := range readMap {
 		match := false
 
@@ -125,12 +125,6 @@ func main() {
 	percMisaligned := float64(misAligned) / float64(*numTestReads) * 100
 	fmt.Printf("%.0f\t%.2f%%\t\tincorrectly aligned reads\n", misAligned, percMisaligned)
 
-	// false negatives are misaligned reads + unaligned reads
-	fNeg = unAligned + misAligned
-	percFneg := float64(fNeg) / float64(*numTestReads) * 100
-	fmt.Printf("%.0f\t%.2f%%\t\tfalse negatives (unaligned/incorrectly aligned READS)\n", fNeg, percFneg)
-
 	// record the start pos stat - don't mark incorrect for now
-	fmt.Printf("\n%.0f/%.0f\tcorrect read alignments had correct start sites\n", correctStart, correctAligned)
-
+	// fmt.Printf("\n%.0f/%.0f\tcorrect read alignments had correct start sites\n", correctStart, correctAligned)
 }

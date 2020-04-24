@@ -12,9 +12,8 @@ import (
 // AlignRead is a method to run a read to graph hierarchical alignment
 func (GrootGraph *GrootGraph) AlignRead(read *seqio.FASTQread, mapping *lshforest.Key, references []*sam.Reference) ([]*sam.Record, error) {
 
-	// TODO: move these hardcoded values to CLI options
+	// TODO: move this hardcoded value to CLI options
 	MaxClip := 2
-	MaxShuffles := 15
 
 	// store the ID of the first node in the seed
 	seedNodeID := mapping.Node
@@ -33,7 +32,7 @@ func (GrootGraph *GrootGraph) AlignRead(read *seqio.FASTQread, mapping *lshfores
 
 	// 1. exact alignment and seed offset shuffling
 	var shuffles int
-	for shuffles = 0; shuffles <= MaxShuffles; shuffles++ {
+	for shuffles = 0; shuffles <= int(mapping.MergeSpan+3); shuffles++ {
 		IDs, startPos = GrootGraph.performAlignment(nodeLookup, &read.Seq, int(mapping.OffSet))
 		if len(IDs) > 0 {
 			break

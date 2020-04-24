@@ -288,6 +288,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 					ContainedNodes: ContainedNodes,
 					Ref:            []uint32{pathID},
 					Sketch:         sketch,
+					MergeSpan:      0,
 				}
 
 				// send this window
@@ -308,7 +309,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 		// identical sketch found, so combine windows
 		if existingWindow, ok := windowChecker[stringifiedSketch]; ok {
 
-			// check for the first occuring
+			// check for the first occuring in the graph
 			nodePos1, ok := GrootGraph.NodeLookup[existingWindow.Node]
 			if !ok {
 				panic("could not perform node lookup during graph windowing")
@@ -317,11 +318,19 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 			if !ok {
 				panic("could not perform node lookup during graph windowing")
 			}
+
+			// existing window is first - update mergespan and continue to next window
 			if nodePos1 <= nodePos2 {
+				mergeSpan := uint32(nodePos2 - nodePos1)
+				if mergeSpan > windowChecker[stringifiedSketch].MergeSpan {
+					windowChecker[stringifiedSketch].MergeSpan = mergeSpan
+				}
+
 				continue
 			}
 
-			// replace the existing window with this one as it preceedes it
+			// otherwise, new window is first so delete the existing one
+			window.MergeSpan = uint32(nodePos1-nodePos2) + windowChecker[stringifiedSketch].MergeSpan
 			delete(windowChecker, stringifiedSketch)
 		}
 		windowChecker[stringifiedSketch] = window
