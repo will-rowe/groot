@@ -209,6 +209,16 @@ func (GrootGraph *GrootGraph) traverse(node *GrootGraphNode, nodeMap map[uint64]
 
 // WindowGraph is a method to slide a window over each path through the graph, sketching the paths and getting window information
 func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) chan *lshforest.Key {
+
+	// set up the return channel
+	graphWindowChan := make(chan *lshforest.Key)
+	var graphWindowChanWG sync.WaitGroup
+	graphWindowChanWG.Add(1)
+	go func() {
+		graphWindowChanWG.Wait()
+		close(graphWindowChan)
+	}()
+
 	// get the linear sequences for this graph
 	pathSeqs, err := GrootGraph.Graph2Seqs()
 	if err != nil {
@@ -224,6 +234,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 	for pathID := range GrootGraph.Paths {
 		go func(pathID uint32) {
 			defer wg.Done()
+
 			// get the length of the linear reference for this path
 			pathLength := GrootGraph.Lengths[pathID]
 
@@ -241,6 +252,9 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 						}
 					}
 				}
+			}
+			if iterator != pathLength {
+				panic("windowing did not traverse entire path")
 			}
 
 			// get the sequence for this path
@@ -286,43 +300,42 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 		close(windowChan)
 	}()
 
-	// receive each window from the graph, combining windows with the same sketch
-	sketchSeen := make(map[string]*lshforest.Key)
+	// any windows with identical sketches will now be combined - keeping only the first occuring window in the graph
+	windowChecker := make(map[string]*lshforest.Key)
 	for window := range windowChan {
 		stringifiedSketch := lshforest.CompressSketch2String(window.Sketch)
 
 		// identical sketch found, so combine windows
-		if existingWindow, ok := sketchSeen[stringifiedSketch]; ok {
+		if existingWindow, ok := windowChecker[stringifiedSketch]; ok {
 
-			// add nodes to the contained nodes list
-			for node := range window.ContainedNodes {
-				existingWindow.ContainedNodes[node]++
+			// check for the first occuring
+			nodePos1, ok := GrootGraph.NodeLookup[existingWindow.Node]
+			if !ok {
+				panic("could not perform node lookup during graph windowing")
+			}
+			nodePos2, ok := GrootGraph.NodeLookup[window.Node]
+			if !ok {
+				panic("could not perform node lookup during graph windowing")
+			}
+			if nodePos1 <= nodePos2 {
+				continue
 			}
 
-			// add pathID
-			existingWindow.Ref = append(existingWindow.Ref, window.Ref...)
-		} else {
-			sketchSeen[stringifiedSketch] = window
+			// replace the existing window with this one as it preceedes it
+			delete(windowChecker, stringifiedSketch)
 		}
+		windowChecker[stringifiedSketch] = window
 	}
 
-	// this method returns a channel, which receives windows as they are made
-	windowChan2 := make(chan *lshforest.Key)
-	var wg2 sync.WaitGroup
-	wg2.Add(1)
+	// send deduplicated windows onwards
 	go func() {
-		for _, window := range sketchSeen {
-			windowChan2 <- window
+		for _, window := range windowChecker {
+			graphWindowChan <- window
 		}
-		wg2.Done()
+		graphWindowChanWG.Done()
 	}()
 
-	go func() {
-		wg2.Wait()
-		close(windowChan2)
-	}()
-
-	return windowChan2
+	return graphWindowChan
 }
 
 /*

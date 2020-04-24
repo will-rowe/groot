@@ -57,5 +57,5 @@ fi
 
 # clean up
 cd ..
-rm -r $TESTDIR
+#rm -r $TESTDIR
 echo "passed"

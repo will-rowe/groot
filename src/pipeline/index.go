@@ -44,9 +44,11 @@ func (proc *MSAconverter) Run() {
 		msa, err := gfa.ReadMSA(msaFile)
 		misc.ErrorCheck(err)
 		go func(msaID int, msa *multi.Multi) {
+
 			// convert the MSA to a GFA instance
 			newGFA, err := gfa.MSA2GFA(msa)
 			misc.ErrorCheck(err)
+
 			// create a GrootGraph
 			grootGraph, err := graph.CreateGrootGraph(newGFA, msaID)
 			if err != nil {
@@ -97,6 +99,7 @@ func (proc *GraphSketcher) Run() {
 				// send the windows for this graph onto the next process
 				proc.output <- window
 			}
+
 			// this graph is sketched, now send it on to be saved in the current process
 			graphChan <- grootGraph
 			wg.Done()
@@ -122,7 +125,7 @@ func (proc *GraphSketcher) Run() {
 	proc.info.Store = graphStore
 }
 
-// SketchIndexer is a pipeline process that adds sketches to the LSH Forest
+// SketchIndexer is a pipeline process that adds sketches to the LSH Ensemble
 type SketchIndexer struct {
 	info  *Info
 	input chan *lshforest.Key
@@ -145,17 +148,33 @@ func (proc *SketchIndexer) Run() {
 	domainRecMap := make(map[int]*lshensemble.DomainRecord)
 	keyLookup := make(map[string]*lshforest.Key) // links sketches to the graph windows
 
-	// collect the sketches and store as domains
+	// collect the window sketches
 	sketchCount := 0
 	for window := range proc.input {
 
-		// create a domain record for this sketch
+		// convert the graph window data to a key
 		key := fmt.Sprintf("g%dn%do%dp%d", window.GraphID, window.Node, window.OffSet, len(window.Ref))
+
+		// use the key to check if the window has been seen before
+		if existingWindow, ok := keyLookup[key]; ok {
+
+			// check if the sketches match
+			if misc.Uint64SliceEqual(existingWindow.GetSketch(), window.Sketch) {
+				misc.ErrorCheck(fmt.Errorf("duplicate graph window sketches not collapsed"))
+			}
+
+			// update the new window key to adjust for several sketches in this region
+			key = fmt.Sprintf("%v-%d", key, sketchCount)
+		}
+
+		// create a domain record for this sketch
 		domainRecMap[sketchCount] = &lshensemble.DomainRecord{
 			Key:       key,
-			Size:      proc.info.WindowSize + proc.info.KmerSize - 1,
+			Size:      (proc.info.WindowSize - proc.info.KmerSize) + 1,
 			Signature: window.Sketch,
 		}
+
+		// add the new window to the lookup
 		keyLookup[key] = window
 		sketchCount++
 	}

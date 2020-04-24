@@ -14,7 +14,7 @@ func (GrootGraph *GrootGraph) AlignRead(read *seqio.FASTQread, mapping *lshfores
 
 	// TODO: move these hardcoded values to CLI options
 	MaxClip := 2
-	MaxShuffles := 5
+	MaxShuffles := 15
 
 	// store the ID of the first node in the seed
 	seedNodeID := mapping.Node
