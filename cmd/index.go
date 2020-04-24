@@ -77,7 +77,7 @@ func runIndex() {
 
 	// start the index  sub command
 	start := time.Now()
-	log.Printf("i am groot (version %s)", version.VERSION)
+	log.Printf("i am groot (version %s)", version.GetVersion)
 	log.Printf("starting the index subcommand")
 
 	// check the supplied files and then log some stuff
@@ -92,7 +92,7 @@ func runIndex() {
 
 	// record the runtime information for the index sub command
 	info := &pipeline.Info{
-		Version:    version.VERSION,
+		Version:    version.GetVersion,
 		KmerSize:   *kmerSize,
 		SketchSize: *sketchSize,
 		WindowSize: *windowSize,

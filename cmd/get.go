@@ -46,7 +46,7 @@ var md5sums = map[string]string{
 }
 
 // dbUrl to download databases from
-var dbURL = fmt.Sprintf("https://github.com/will-rowe/groot/raw/master/db/clustered-ARG-databases/%v/", version.VERSION)
+var dbURL = fmt.Sprintf("https://github.com/will-rowe/groot/raw/master/db/clustered-ARG-databases/%v/", version.GetBaseVersion)
 
 // the command line arguments
 var (

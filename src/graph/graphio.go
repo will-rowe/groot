@@ -20,7 +20,7 @@ func (GrootGraph *GrootGraph) SaveGraphAsGFA(fileName string, totalKmers int) (i
 	// a flag to prevent dumping graphs which had no reads map
 	graphUsed := false
 	t := time.Now()
-	stamp := fmt.Sprintf("variation graph created by groot (version %v) at: %v", version.VERSION, t.Format("Mon Jan _2 15:04:05 2006"))
+	stamp := fmt.Sprintf("variation graph created by groot (version %v) at: %v", version.GetVersion, t.Format("Mon Jan _2 15:04:05 2006"))
 	msg := fmt.Sprintf("this graph is approximately weighted using k-mer frequencies from projected read sketches (total k-mers projected across all graphs: %d)", totalKmers)
 	// create a GFA instance
 	newGFA := gfa.NewGFA()

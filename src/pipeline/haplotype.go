@@ -165,7 +165,7 @@ func (proc *HaplotypeParser) Run() {
 			log.Printf("\t- [%v (abundance: %.3f)]", path, abundances[i])
 			keptPaths = append(keptPaths, path)
 		}
-		g.GrootVersion = version.VERSION
+		g.GrootVersion = version.GetVersion
 		keptGraphs[g.GraphID] = g
 	}
 	proc.info.Store = keptGraphs
