@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/will-rowe/groot/src/graph"
@@ -9,6 +10,7 @@ import (
 )
 
 func TestSketching(t *testing.T) {
+
 	// load the files from the previous tests
 	testParameters := new(Info)
 	if err := testParameters.Load("test-data/tmp/groot.gg"); err != nil {
@@ -62,5 +64,19 @@ func TestSketching(t *testing.T) {
 		fileName := fmt.Sprintf("test-data/tmp/groot-graph-%d.gfa", graphID)
 		_, err := g.SaveGraphAsGFA(fileName, readStats[3])
 		misc.ErrorCheck(err)
+	}
+
+	// remove the tmp files from all tests
+	if err := os.Remove("test-data/tmp/groot.gg"); err != nil {
+		t.Fatal("indexing did not create graph file: ", err)
+	}
+	if err := os.Remove("test-data/tmp/groot.lshe"); err != nil {
+		t.Fatal("indexing did not create index file: ", err)
+	}
+	if err := os.Remove("test-data/tmp/groot-graph-0.gfa"); err != nil {
+		t.Fatal("sketching did not create graph file: ", err)
+	}
+	if err := os.RemoveAll("test-data/tmp"); err != nil {
+		t.Fatal("tests could not remove tmp directory")
 	}
 }

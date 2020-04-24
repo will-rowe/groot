@@ -43,6 +43,7 @@ var testParameters = &Info{
 		MinKmerCoverage: 10,
 		BloomFilter:     false,
 		Fasta:           false,
+		BAMout:          "test-data/tmp/out.bam",
 	},
 	Haplotype: HaploCmd{
 		Cutoff:        1.0,

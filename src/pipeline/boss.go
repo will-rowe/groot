@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -21,6 +22,7 @@ type theBoss struct {
 	refSAMheaders       map[int][]*sam.Reference // map of SAM headers for each reference sequence, indexed by path ID
 	reads               chan *seqio.FASTQread    // the boss uses this channel to receive data from the main sketching pipeline
 	alignments          chan *sam.Record         // used to receive alignments from the graph minions
+	outFile             io.Writer                // destination for the BAM output
 	receivedReadCount   int                      // the number of reads the boss is sent during it's lifetime
 	mappedCount         int                      // the total number of reads that were successful mapped to at least one graph
 	multimappedCount    int                      // the total number of reads that had multiple mappings
@@ -33,6 +35,7 @@ func newBoss(runtimeInfo *Info, inputChan chan *seqio.FASTQread) *theBoss {
 	return &theBoss{
 		info:              runtimeInfo,
 		reads:             inputChan,
+		outFile:           os.Stdout,
 		receivedReadCount: 0,
 		mappedCount:       0,
 		multimappedCount:  0,
@@ -84,7 +87,7 @@ func (theBoss *theBoss) mapReads() error {
 	}
 
 	// create the bam writer and write the header
-	bw, err := bam.NewWriter(os.Stdout, header, 0)
+	bw, err := bam.NewWriter(theBoss.outFile, header, 0)
 	if err != nil {
 		return err
 	}

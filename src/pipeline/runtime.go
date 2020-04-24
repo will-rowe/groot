@@ -35,6 +35,7 @@ type AlignCmd struct {
 	Fasta           bool
 	BloomFilter     bool
 	MinKmerCoverage float64
+	BAMout          string
 }
 
 // HaploCmd stores the runtime info for the haplotype command
