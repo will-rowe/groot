@@ -135,4 +135,3 @@ Flags explained:
 Some more flags that can be used:
 
 - `--lowCov`: overrides `c` option and will report ARGs which may not be covered at the 5'/3' ends
-- `--plotCov`: outputs coverage plot for each ARG reported

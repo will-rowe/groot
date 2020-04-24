@@ -6,30 +6,22 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/biogo/hts/bam"
 	"github.com/biogo/hts/bgzf"
 	"github.com/biogo/hts/sam"
-
-	"gonum.org/v1/plot"
-	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/plotutil"
-	"gonum.org/v1/plot/vg"
 )
 
 type annotation struct {
-	arg      string
-	count    int
-	length   int
-	coverage plotter.XYs
-	cigar    string
+	arg    string
+	count  int
+	length int
+	cigar  string
 }
 
 type BAMreader struct {
 	InputFile      string
-	Plot           bool
 	CoverageCutoff float64
 	LowCov         bool
 }
@@ -102,20 +94,25 @@ func (proc *BAMreader) Run() {
 			wg.Add(1)
 			go func(recs []*sam.Record, ref *sam.Reference, sendChan chan<- annotation) {
 				defer wg.Done()
+
 				// coverageCheck tells us if all bases in the reference have been covered by a read
 				coverageCheck := make(map[int]struct{})
+
 				// pileup contains coverage value for each base in the reference
 				pileup := make([]int, ref.Len())
+
 				// for each record, move along the alignment and update reference coverage info
 				for _, rec := range recs {
 					recStart := rec.Start()
 					recEnd := recStart + rec.Len()
+
 					// if the read goes beyond the reference, only go up to the last base of the ref
 					if recEnd > len(pileup)-1 {
 						recEnd = len(pileup) - 1
 					}
 
 					for i := recStart; i <= recEnd; i++ {
+
 						// if this is the first time the base has been covered, update coverageCheck
 						if _, ok := coverageCheck[i]; !ok {
 							coverageCheck[i] = struct{}{}
@@ -128,19 +125,19 @@ func (proc *BAMreader) Run() {
 				// check we have a fully covered reference
 				pileupCoverage := float64(len(coverageCheck)) / float64(len(pileup))
 				if pileupCoverage >= proc.CoverageCutoff {
+
 					// get the reference name (remove asterisk from cluster representative if it is present)
 					refName := ref.Name()
 					if refName[0] == 42 {
 						refName = refName[1:]
 					}
+
 					// represent pileup as a CIGAR-ish string (so can see what bases aren't covered)
 					cigar := []string{}
+
 					// plot coverage for this gene using the pileup
-					coverage := make(plotter.XYs, len(pileup))
-					for i := range coverage {
-						coverage[i].X = float64(i)
-						coverage[i].Y = float64(pileup[i])
-						if pileup[i] == 0 {
+					for _, val := range pileup {
+						if val == 0 {
 							cigar = append(cigar, "D")
 						} else {
 							cigar = append(cigar, "M")
@@ -152,11 +149,10 @@ func (proc *BAMreader) Run() {
 					}
 					// create the annotation
 					anno := annotation{
-						arg:      refName,
-						count:    len(records),
-						length:   ref.Len(),
-						coverage: coverage,
-						cigar:    cleanCigar,
+						arg:    refName,
+						count:  len(records),
+						length: ref.Len(),
+						cigar:  cleanCigar,
 					}
 					// send annotation on
 					sendChan <- anno
@@ -173,30 +169,6 @@ func (proc *BAMreader) Run() {
 	for anno := range reportChan {
 		// print info to stdout
 		fmt.Printf("%v\t%d\t%d\t%v\n", anno.arg, anno.count, anno.length, anno.cigar)
-
-		// this will clean up the ARG name so that we can use it as a filename
-		var replacer = strings.NewReplacer("/", "__", "\t", "__")
-
-		// plot coverage for this gene
-		if proc.Plot == true {
-			covPlot, err := plot.New()
-			if err != nil {
-				panic(err)
-			}
-			covPlot.Title.Text = "coverage plot"
-			covPlot.X.Label.Text = "position in gene"
-			covPlot.Y.Label.Text = "coverage (number of reads at position)"
-			err = plotutil.AddLinePoints(covPlot, anno.arg, anno.coverage)
-			if err != nil {
-				panic(err)
-			}
-			// clean the ARG name
-			anno.arg = replacer.Replace(anno.arg)
-			fileName := fmt.Sprintf("./groot-plots/coverage-for-%v.png", anno.arg)
-			if err := covPlot.Save(8*vg.Inch, 8*vg.Inch, fileName); err != nil {
-				panic(err)
-			}
-		}
 	}
 }
 

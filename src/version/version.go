@@ -9,9 +9,9 @@ const major = 1
 const minor = 0
 
 // patch is the patch version number
-const patch = 1
+const patch = 2
 
-// GetVersion() returns the full version string for the current GROOT software
+// GetVersion returns the full version string for the current GROOT software
 func GetVersion() string {
 	return fmt.Sprintf("%d.%d.%d", major, minor, patch)
 }

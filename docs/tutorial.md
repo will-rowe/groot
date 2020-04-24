@@ -205,6 +205,8 @@ ls *.bam | parallel --gnu "groot report --bamFile {} -c 1 --plotCov > {/.}.repor
 - `-c 1` tells groot to only report ARGs that have been entirely covered by reads, I.E. a full-length,100% identity match
 - `--plotCov` tells groot to generate coverage plots for each ARG it reports
 
+> NOTE: `--plotCov` was removed after v.1.0.0 as it relied on a library that could not be packaged for conda. Hopefully I can add it back in soon.
+
 We have now generated a resistome profile for each sample, using only full-length ARG sequences (present in the ARG-ANNOT database). We can sum rural/urban resistome profiles with a little bash loop to combine reports:
 
 ```bash
