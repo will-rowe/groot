@@ -30,9 +30,9 @@ copyright = '2019, Will Rowe'
 author = 'Will Rowe'
 
 # The short X.Y version
-version = '1.0'
+version = '1.1'
 # The full version, including alpha/beta/rc tags
-release = '1.0.2'
+release = '1.1.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -79,8 +79,11 @@ pygments_style = 'sphinx'
 #
 html_theme = 'bootstrap'
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+
+
 def setup(app):
-    app.add_stylesheet("my-styles.css") # also can be a full URL
+    app.add_stylesheet("my-styles.css")  # also can be a full URL
+
 
 html_logo = "groot-logo.png"
 html_theme_options = {

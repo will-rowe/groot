@@ -91,6 +91,7 @@ Some more flags that can be used:
 - `-s`: size of MinHash sketch
 - `-x`: number of partitions in the LSH Ensemble index
 - `-y`: maxK in the LSH Ensemble index
+- `--maxSketchSpan`: max number of identical neighbouring sketches permitted in any graph traversal
 
 > Important: GROOT can only accept MSAs as input. You can cluster your own database or use `groot get` to obtain a pre-clustered one.
 
