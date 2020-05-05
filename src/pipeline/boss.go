@@ -9,8 +9,6 @@ import (
 
 	"github.com/biogo/hts/bam"
 	"github.com/biogo/hts/sam"
-	"github.com/will-rowe/groot/src/lshforest"
-	"github.com/will-rowe/groot/src/minhash"
 	"github.com/will-rowe/groot/src/seqio"
 	"github.com/will-rowe/groot/src/version"
 )
@@ -25,7 +23,7 @@ type theBoss struct {
 	outFile             io.Writer                // destination for the BAM output
 	receivedReadCount   int                      // the number of reads the boss is sent during it's lifetime
 	mappedCount         int                      // the total number of reads that were successful mapped to at least one graph
-	multimappedCount    int                      // the total number of reads that had multiple mappings
+	multimappedCount    int                      // the total number of reads that had mappings to multiple graphs
 	alignmentCount      int                      // the total number of alignment segments reported post hierarchical alignment of mapped reads
 	sync.Mutex                                   // allows sketching minions to update the Boss's count
 }
@@ -101,7 +99,7 @@ func (theBoss *theBoss) mapReads() error {
 	for graphID, graph := range theBoss.info.Store {
 
 		// create, start and register the graph minion
-		minion := newGraphMinion(graphID, graph, theBoss.alignments, theBoss.refSAMheaders[int(graphID)])
+		minion := newGraphMinion(graphID, graph, theBoss.alignments, theBoss.refSAMheaders[int(graphID)], theBoss)
 		wg2.Add(1)
 		minion.start(&wg2)
 		theBoss.graphMinionRegister[graphID] = minion
@@ -138,7 +136,7 @@ func (theBoss *theBoss) mapReads() error {
 				}
 
 				// get sketch for read
-				readSketch, err := minhash.GetReadSketch(read.Seq, uint(theBoss.info.KmerSize), uint(theBoss.info.SketchSize), false)
+				readSketch, err := read.RunMinHash(theBoss.info.KmerSize, theBoss.info.SketchSize, false, nil)
 				if err != nil {
 					panic(err)
 				}
@@ -147,20 +145,11 @@ func (theBoss *theBoss) mapReads() error {
 				kmerCount := (len(read.Seq) - theBoss.info.KmerSize) + 1
 
 				// query the LSH ensemble
-				hits, err := theBoss.info.db.Query(readSketch, kmerCount, theBoss.info.ContainmentThreshold)
+				results, err := theBoss.info.db.Query(readSketch, kmerCount, theBoss.info.ContainmentThreshold)
 				if err != nil {
 					panic(err)
 				}
-				for _, hit := range hits {
-
-					// make a copy of this graphWindow
-					graphWindow := lshforest.Key{
-						GraphID:        hit.GraphID,
-						Node:           hit.Node,
-						OffSet:         hit.OffSet,
-						ContainedNodes: hit.ContainedNodes, // don't need to deep copy this as we don't edit it
-						Freq:           float64(kmerCount), // add the k-mer count of the read in this window
-					}
+				for graphID, hits := range results {
 
 					// make a copy of the read
 					readCopy := seqio.FASTQread{
@@ -170,16 +159,16 @@ func (theBoss *theBoss) mapReads() error {
 						RC:       read.RC,
 					}
 
-					// send the window to the correct go routine for read alignment and graph augmentation
-					theBoss.graphMinionRegister[hit.GraphID].inputChannel <- &graphMinionPair{graphWindow, readCopy}
+					// send the windows to the correct go routine for read alignment and graph augmentation
+					theBoss.graphMinionRegister[graphID].inputChannel <- &graphMinionPair{hits, readCopy}
 				}
 
 				// update counts
 				receivedReads++
-				if len(hits) > 0 {
+				if len(results) > 0 {
 					mappedCount++
 				}
-				if len(hits) > 1 {
+				if len(results) > 1 {
 					multimappedCount++
 				}
 			}

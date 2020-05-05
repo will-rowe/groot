@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/biogo/hts/sam"
@@ -11,8 +12,8 @@ import (
 )
 
 type graphMinionPair struct {
-	mapping lshforest.Key
-	read    seqio.FASTQread
+	mappings lshforest.Keys
+	read     seqio.FASTQread
 }
 
 // graphMinion holds a graph and is responsible for augmenting the paths when new mapping data arrives
@@ -23,10 +24,11 @@ type graphMinion struct {
 	outputChannel chan *sam.Record
 	runAlignment  bool
 	references    []*sam.Reference // the SAM references for each path in this graph
+	boss          *theBoss         // pointer to the boss so the minion can access the runtime info (e.g. k-mer size)
 }
 
 // newGraphMinion is the constructor function
-func newGraphMinion(id uint32, graph *graph.GrootGraph, alignmentChan chan *sam.Record, refs []*sam.Reference) *graphMinion {
+func newGraphMinion(id uint32, graph *graph.GrootGraph, alignmentChan chan *sam.Record, refs []*sam.Reference, boss *theBoss) *graphMinion {
 	return &graphMinion{
 		id:            id,
 		graph:         graph,
@@ -34,6 +36,7 @@ func newGraphMinion(id uint32, graph *graph.GrootGraph, alignmentChan chan *sam.
 		outputChannel: alignmentChan,
 		runAlignment:  true, // setting this to True for now to replicate groot behaviour - can be used later to run groot haplotype workflow etc.
 		references:    refs,
+		boss:          boss,
 	}
 }
 
@@ -49,30 +52,51 @@ func (graphMinion *graphMinion) start(wg *sync.WaitGroup) {
 				return
 			}
 
-			// increment the graph node weightings for nodes contained in the mapping window
-			misc.ErrorCheck(graphMinion.graph.IncrementSubPath(mappingData.mapping.ContainedNodes, mappingData.mapping.Freq))
+			// sort the mappings for this read
+			sort.Sort(mappingData.mappings)
 
-			// perform the alignment if requested
-			if !graphMinion.runAlignment {
-				continue
-			}
+			// claculate the number of k-mers for the read
+			kmerCount := float64(len(mappingData.read.Seq)-graphMinion.boss.info.KmerSize) + 1
 
-			// perform graph alignment on forward and reverse complement
-			// TODO: as we used canonical k-mer hashing, not sure which orientation the read seeded in, think about this some more
-			for i := 0; i < 2; i++ {
+			// process each mapping until an exact alignment found
+			alignmentFound := false
+			for _, mapping := range mappingData.mappings {
 
-				// run the alignment
-				alignments, err := graphMinion.graph.AlignRead(&mappingData.read, &mappingData.mapping, graphMinion.references)
-				if err != nil {
-					panic(err)
-				}
-				for _, alignment := range alignments {
-					graphMinion.outputChannel <- alignment
+				// increment the graph node weightings for nodes contained in the mapping window
+				misc.ErrorCheck(graphMinion.graph.IncrementSubPath(mapping.ContainedNodes, kmerCount))
+
+				// perform the alignment if requested
+				if !graphMinion.runAlignment {
+					continue
 				}
 
-				// reverse complement read and run again
-				mappingData.read.RevComplement()
+				// perform graph alignment on forward and reverse complement
+				// TODO: as we used canonical k-mer hashing, not sure which orientation the read seeded in, think about this some more
+				for i := 0; i < 2; i++ {
+
+					// run the alignment
+					alignments, err := graphMinion.graph.AlignRead(&mappingData.read, &mapping, graphMinion.references)
+					if err != nil {
+						panic(err)
+					}
+
+					// if an alignment was found, send them and call it a day
+					if len(alignments) != 0 {
+						for _, alignment := range alignments {
+							graphMinion.outputChannel <- alignment
+						}
+						alignmentFound = true
+						break
+					}
+
+					// reverse complement read and run again if no alignment found
+					mappingData.read.RevComplement()
+				}
+				if alignmentFound {
+					break
+				}
 			}
+			//log.Printf("graph %d could not find alignment for %v after trying %d mapping locations", graphMinion.id, string(mappingData.read.ID), len(mappingData.mappings))
 		}
 	}()
 }

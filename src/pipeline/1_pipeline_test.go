@@ -32,11 +32,12 @@ TEST PARAMETERS
 var testParameters = &Info{
 	NumProc:              1,
 	Version:              version.GetVersion(),
-	KmerSize:             31,
-	SketchSize:           30,
+	KmerSize:             41,
+	SketchSize:           50,
 	WindowSize:           100,
 	NumPart:              8,
 	MaxK:                 4,
+	MaxSketchSpan:        30,
 	ContainmentThreshold: 0.99,
 	IndexDir:             "test-data/tmp",
 	Sketch: AlignCmd{

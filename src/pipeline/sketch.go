@@ -341,6 +341,7 @@ func (proc *ReadMapper) Run() {
 		proc.info.Store = make(graph.Store)
 		return
 	}
+	log.Printf("\ttotal number of unmapped reads: %d\n", theBoss.receivedReadCount-theBoss.mappedCount)
 	log.Printf("\ttotal number of mapped reads: %d\n", theBoss.mappedCount)
 	log.Printf("\t\tuniquely mapped: %d\n", (theBoss.mappedCount - theBoss.multimappedCount))
 	log.Printf("\t\tmultimapped: %d\n", theBoss.multimappedCount)

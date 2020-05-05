@@ -20,6 +20,7 @@ type Info struct {
 	WindowSize           int
 	NumPart              int
 	MaxK                 int
+	MaxSketchSpan        int
 	ContainmentThreshold float64
 	IndexDir             string
 	Store                graph.Store
