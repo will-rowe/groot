@@ -11,6 +11,22 @@ import (
 // HASH_SIZE is set to 2/4/8 for 16bit/32bit/64bit hash values
 const HASH_SIZE = 8
 
+// Keys is used to hold multiple keys (as returned by the LSH Ensemble query)
+type Keys []Key
+
+// Keys implements the sort interface
+func (k Keys) Len() int {
+	return len(k)
+}
+
+func (k Keys) Less(i, j int) bool {
+	return k[i].Node < k[j].Node
+}
+
+func (k Keys) Swap(i, j int) {
+	k[i], k[j] = k[j], k[i]
+}
+
 // IndexWrapper is the base type for the GROOT index
 // it provides access to an LSH forest index
 type IndexWrapper struct {

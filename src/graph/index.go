@@ -19,7 +19,7 @@ import (
 type ContainmentIndex struct {
 
 	// LookupMap relates the stringified keys in the index to the graph windows
-	LookupMap map[string]*lshforest.Key
+	LookupMap map[string]lshforest.Key
 
 	// DomainRecords is used for construction of the index, then destroyed
 	DomainRecords []*lshensemble.DomainRecord
@@ -30,8 +30,8 @@ type ContainmentIndex struct {
 	// MaxK is the number of hash funcs per band
 	MaxK int
 
-	// WindowSize is the number of k-mers in the graph windows
-	WindowSize int
+	// NumWindowKmers is the number of k-mers in the graph windows
+	NumWindowKmers int
 
 	// SketchSize is the size of the sketches being indexed (num hash funcs)
 	SketchSize int
@@ -54,16 +54,16 @@ add the Key struct here and remove LSH Forest guff
 */
 
 // PrepareIndex prepares a LSH Ensemble index from a map of domain records and a map of keys-windows
-func PrepareIndex(domainRecMap map[int]*lshensemble.DomainRecord, lookupMap map[string]*lshforest.Key, numPart, maxK, windowSize, sketchSize int) *ContainmentIndex {
+func PrepareIndex(domainRecMap map[int]*lshensemble.DomainRecord, lookupMap map[string]lshforest.Key, numPart, maxK, numWindowKmers, sketchSize int) *ContainmentIndex {
 
 	// setup the struct
 	ci := &ContainmentIndex{
-		DomainRecords: make([]*lshensemble.DomainRecord, len(domainRecMap)),
-		LookupMap:     lookupMap,
-		NumPart:       numPart,
-		MaxK:          maxK,
-		WindowSize:    windowSize,
-		SketchSize:    sketchSize,
+		DomainRecords:  make([]*lshensemble.DomainRecord, len(domainRecMap)),
+		LookupMap:      lookupMap,
+		NumPart:        numPart,
+		MaxK:           maxK,
+		NumWindowKmers: numWindowKmers,
+		SketchSize:     sketchSize,
 	}
 
 	// get the domain records into a sorted arrays
@@ -121,20 +121,11 @@ func (ContainmentIndex *ContainmentIndex) LoadFromBytes(data []byte) error {
 	if ContainmentIndex.DomainRecords == nil {
 		return fmt.Errorf("loaded an empty index file")
 	}
-
-	/*
-		// populate the LSH Ensemble
-		ContainmentIndex.LSHensemble, err = lshensemble.BootstrapLshEnsembleOptimal(ContainmentIndex.NumPart, ContainmentIndex.SketchSize, ContainmentIndex.MaxK,
-			func() <-chan *lshensemble.DomainRecord {
-				return lshensemble.Recs2Chan(ContainmentIndex.DomainRecords)
-			})
-	*/
-
-	// Create index using equi-depth partitioning
-	// You can also use BootstrapLshEnsemblePlusEquiDepth for better accuracy
-	ContainmentIndex.LSHensemble, err = lshensemble.BootstrapLshEnsembleEquiDepth(ContainmentIndex.NumPart, ContainmentIndex.SketchSize, ContainmentIndex.MaxK, len(ContainmentIndex.DomainRecords), recs2Chan(ContainmentIndex.DomainRecords))
-
 	ContainmentIndex.numSketches = len(ContainmentIndex.DomainRecords)
+
+	// create index using equi-depth partitioning
+	ContainmentIndex.LSHensemble, err = lshensemble.BootstrapLshEnsembleEquiDepth(ContainmentIndex.NumPart, ContainmentIndex.SketchSize, ContainmentIndex.MaxK, ContainmentIndex.numSketches, recs2Chan(ContainmentIndex.DomainRecords))
+	//ContainmentIndex.LSHensemble, err = lshensemble.BootstrapLshEnsemblePlusEquiDepth(ContainmentIndex.NumPart, ContainmentIndex.SketchSize, ContainmentIndex.MaxK, ContainmentIndex.numSketches, recs2Chan(ContainmentIndex.DomainRecords))
 
 	// get rid of the domain records as they are not needed anymore
 	ContainmentIndex.DomainRecords = nil
@@ -142,24 +133,31 @@ func (ContainmentIndex *ContainmentIndex) LoadFromBytes(data []byte) error {
 	return err
 }
 
-// Query is temp function to check the the index can be queried
-func (ContainmentIndex *ContainmentIndex) Query(querySig []uint64, querySize int, containmentThreshold float64) ([]*lshforest.Key, error) {
+// Query wraps the LSH ensemble query method
+// query sig is the sketch
+// query size is the number of k-mers in the query sequence
+// containment threshold is the containment threshold...
+func (ContainmentIndex *ContainmentIndex) Query(querySig []uint64, querySize int, containmentThreshold float64) (map[uint32]lshforest.Keys, error) {
 	done := make(chan struct{})
 	defer close(done)
-	results := []*lshforest.Key{}
+	results := make(map[uint32]lshforest.Keys)
 	for hit := range ContainmentIndex.LSHensemble.Query(querySig, querySize, containmentThreshold, done) {
-
 		key, err := ContainmentIndex.getKey(hit.(string))
 		if err != nil {
 			return nil, err
 		}
 
 		// full containment check
-		// TODO: this should be optional
-		if lshensemble.Containment(querySig, key.Sketch, querySize, ContainmentIndex.WindowSize) > containmentThreshold {
-			results = append(results, key)
+		// TODO: this should probably be optional but overhead seems minimal
+		if lshensemble.Containment(querySig, key.Sketch, querySize, ContainmentIndex.NumWindowKmers) > containmentThreshold {
+			if len(results[key.GraphID]) == 0 {
+				results[key.GraphID] = lshforest.Keys{*key}
+			} else {
+				results[key.GraphID] = append(results[key.GraphID], *key)
+			}
 		}
 	}
+
 	return results, nil
 }
 
@@ -169,7 +167,7 @@ func (ContainmentIndex *ContainmentIndex) getKey(keystring string) (*lshforest.K
 	returnKey, ok := ContainmentIndex.LookupMap[keystring]
 	ContainmentIndex.lock.Unlock()
 	if ok {
-		return returnKey, nil
+		return &returnKey, nil
 	}
 	return nil, fmt.Errorf("key not found in LSH Ensemble: %v", keystring)
 }

@@ -36,4 +36,5 @@ message Key {
     repeated uint64 Sketch = 7; // the sketch of this graph window
     double Freq = 8; // records the number of k-mers this graph window has received during read mapping
     uint32 MergeSpan = 9; // indicates maximum distance between graph windows this key represents (used in window merging if sketches identical)
+    uint32 WindowSize = 10; // the size of the window that was sketched (prior to merging)
 }
