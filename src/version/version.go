@@ -6,10 +6,10 @@ import "fmt"
 const major = 1
 
 // minor is the minor version number
-const minor = 0
+const minor = 1
 
 // patch is the patch version number
-const patch = 2
+const patch = 0
 
 // GetVersion returns the full version string for the current GROOT software
 func GetVersion() string {

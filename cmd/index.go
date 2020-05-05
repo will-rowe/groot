@@ -17,13 +17,14 @@ import (
 
 // the command line arguments
 var (
-	kmerSize   *int     // size of k-mer
-	sketchSize *int     // size of MinHash sketch
-	windowSize *int     // length of query reads (used during alignment subcommand), needed as window length should ~= read length
-	numPart    *int     // number of partitions in the LSH Ensemble
-	maxK       *int     // maxK in the LSH Ensemble
-	msaDir     *string  // directory containing the input MSA files
-	msaList    []string // the collected MSA files
+	kmerSize      *int     // size of k-mer
+	sketchSize    *int     // size of MinHash sketch
+	windowSize    *int     // length of query reads (used during alignment subcommand), needed as window length should ~= read length
+	numPart       *int     // number of partitions in the LSH Ensemble
+	maxK          *int     // maxK in the LSH Ensemble
+	maxSketchSpan *int     // max distance between merged sketches
+	msaDir        *string  // directory containing the input MSA files
+	msaList       []string // the collected MSA files
 )
 
 // the index command (used by cobra)
@@ -41,11 +42,12 @@ var indexCmd = &cobra.Command{
 
 // a function to initialise the command line arguments
 func init() {
-	kmerSize = indexCmd.Flags().IntP("kmerSize", "k", 21, "size of k-mer")
-	sketchSize = indexCmd.Flags().IntP("sketchSize", "s", 42, "size of MinHash sketch")
+	kmerSize = indexCmd.Flags().IntP("kmerSize", "k", 31, "size of k-mer")
+	sketchSize = indexCmd.Flags().IntP("sketchSize", "s", 21, "size of MinHash sketch")
 	windowSize = indexCmd.Flags().IntP("windowSize", "w", 100, "size of window to sketch graph traversals with")
 	numPart = indexCmd.Flags().IntP("numPart", "x", 8, "number of partitions in the LSH Ensemble")
 	maxK = indexCmd.Flags().IntP("maxK", "y", 4, "maxK in the LSH Ensemble")
+	maxSketchSpan = indexCmd.Flags().Int("maxSketchSpan", 30, "max number of identical neighbouring sketches permitted in any graph traversal")
 	msaDir = indexCmd.Flags().StringP("msaDir", "m", "", "directory containing the clustered references (MSA files) - required")
 	indexCmd.MarkFlagRequired("msaDir")
 	RootCmd.AddCommand(indexCmd)
@@ -89,16 +91,18 @@ func runIndex() {
 	log.Printf("\tgraph window size: %d", *windowSize)
 	log.Printf("\tnum. partitions: %d", *numPart)
 	log.Printf("\tmax. K: %d", *maxK)
+	log.Printf("\tmax. sketch span: %d", *maxSketchSpan)
 
 	// record the runtime information for the index sub command
 	info := &pipeline.Info{
-		Version:    version.GetVersion(),
-		KmerSize:   *kmerSize,
-		SketchSize: *sketchSize,
-		WindowSize: *windowSize,
-		NumPart:    *numPart,
-		MaxK:       *maxK,
-		IndexDir:   *indexDir,
+		Version:       version.GetVersion(),
+		KmerSize:      *kmerSize,
+		SketchSize:    *sketchSize,
+		WindowSize:    *windowSize,
+		NumPart:       *numPart,
+		MaxK:          *maxK,
+		MaxSketchSpan: *maxSketchSpan,
+		IndexDir:      *indexDir,
 	}
 
 	// create the pipeline

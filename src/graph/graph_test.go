@@ -79,12 +79,20 @@ func TestWindowGraph(t *testing.T) {
 		t.Fatal(err)
 	}
 	counter := 0
-	for window := range grootGraph.WindowGraph(windowSize, kmerSize, sketchSize) {
-		//t.Log(window)
-		_ = window
-		counter++
+	graphWindows, err := grootGraph.WindowGraph(windowSize, kmerSize, sketchSize)
+	if err != nil {
+		t.Fatal(err)
 	}
-	t.Log("number of windows with unique sketchs: ", counter)
+	for windowStart, windows := range graphWindows {
+		//t.Log(windowStart)
+		_ = windowStart
+		for _, window := range windows {
+			//t.Log(window)
+			_ = window
+			counter++
+		}
+	}
+	t.Log("number of sketches produced by windowing: ", counter)
 }
 
 /*

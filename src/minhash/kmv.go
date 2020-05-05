@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/will-rowe/ntHash"
+	"github.com/will-rowe/nthash"
 )
 
 // KMVsketch is the structure for the K-Minimum Values MinHash sketch of a set of k-mers
@@ -37,8 +37,8 @@ func (KMVsketch *KMVsketch) AddSequence(sequence []byte) error {
 		return fmt.Errorf("sequence length (%d) is short than k-mer length (%d)", len(sequence), KMVsketch.kmerSize)
 	}
 
-	// initiate the rolling ntHash
-	hasher, err := ntHash.New(&sequence, KMVsketch.kmerSize)
+	// initiate the rolling nthash
+	hasher, err := nthash.NewHasher(&sequence, KMVsketch.kmerSize)
 	if err != nil {
 		return err
 	}

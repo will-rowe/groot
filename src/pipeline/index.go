@@ -44,6 +44,7 @@ func (proc *MSAconverter) Run() {
 		msa, err := gfa.ReadMSA(msaFile)
 		misc.ErrorCheck(err)
 		go func(msaID int, msa *multi.Multi) {
+			defer wg.Done()
 
 			// convert the MSA to a GFA instance
 			newGFA, err := gfa.MSA2GFA(msa)
@@ -54,8 +55,16 @@ func (proc *MSAconverter) Run() {
 			if err != nil {
 				misc.ErrorCheck(err)
 			}
+
+			// mark the graph has masked if the requested window size is larger than the smallest seq in the graph
+			for i, seqLen := range grootGraph.Lengths {
+				if seqLen < proc.info.WindowSize {
+					log.Printf("\tsequence for %v is shorter than window size (%d vs. %d), skipping graph", string(grootGraph.Paths[i]), seqLen, proc.info.WindowSize)
+					grootGraph.Masked = true
+					break
+				}
+			}
 			proc.output <- grootGraph
-			wg.Done()
 		}(i, msa)
 	}
 	wg.Wait()
@@ -66,12 +75,12 @@ func (proc *MSAconverter) Run() {
 type GraphSketcher struct {
 	info   *Info
 	input  chan *graph.GrootGraph
-	output chan *lshforest.Key
+	output chan map[string][]lshforest.Key
 }
 
 // NewGraphSketcher is the constructor
 func NewGraphSketcher(info *Info) *GraphSketcher {
-	return &GraphSketcher{info: info, output: make(chan *lshforest.Key, BUFFERSIZE)}
+	return &GraphSketcher{info: info, output: make(chan map[string][]lshforest.Key, BUFFERSIZE)}
 }
 
 // Connect is the method to connect the MSAconverter to some data source
@@ -93,11 +102,14 @@ func (proc *GraphSketcher) Run() {
 		wg.Add(1)
 		go func(grootGraph *graph.GrootGraph) {
 
-			// create sketch for each window in the graph
-			for window := range grootGraph.WindowGraph(proc.info.WindowSize, proc.info.KmerSize, proc.info.SketchSize) {
+			if !grootGraph.Masked {
 
-				// send the windows for this graph onto the next process
-				proc.output <- window
+				// create sketch for each window in the graph (merging consecutive windows with identical sketches)
+				windows, err := grootGraph.WindowGraph(proc.info.WindowSize, proc.info.KmerSize, proc.info.SketchSize)
+				misc.ErrorCheck(err)
+
+				// send the windows on the indexing
+				proc.output <- windows
 			}
 
 			// this graph is sketched, now send it on to be saved in the current process
@@ -111,15 +123,43 @@ func (proc *GraphSketcher) Run() {
 	}()
 
 	// collect the graphs
+	numMasked := 0
+	numWindows := 0
+	propDistinctSketches := 0.0
 	for sketchedGraph := range graphChan {
+		if sketchedGraph.Masked {
+			numMasked++
+		} else {
+
+			// get the number of windows sketched, the proportion which resulted in distinct sketches, and the max span between merged sketches
+			nw, nds, ms, err := sketchedGraph.GetSketchStats()
+			misc.ErrorCheck(err)
+			propDistinct := float64(nds) / float64(nw)
+
+			// check for the max span between identical sketches
+			if ms > proc.info.MaxSketchSpan {
+				refs, err := sketchedGraph.GetRefIDs()
+				misc.ErrorCheck(err)
+				misc.ErrorCheck(fmt.Errorf("graph (ID: %d) encountered where %d sketches in a row were merged (max permitted span: %d)\nencoded seqs: %v", sketchedGraph.GraphID, ms, proc.info.MaxSketchSpan, refs))
+			}
+
+			numWindows += nw
+			propDistinctSketches += propDistinct
+		}
+
+		// store the graph
 		graphStore[sketchedGraph.GraphID] = sketchedGraph
 	}
 
 	// check some graphs have been sketched
-	if len(graphStore) == 0 {
-		misc.ErrorCheck(fmt.Errorf("could not create any graphs"))
+	numGraphs := len(graphStore) - numMasked
+	if numGraphs == 0 {
+		misc.ErrorCheck(fmt.Errorf("could not create and sketch any graphs"))
 	}
 	log.Printf("\tnumber of groot graphs built: %d", len(graphStore))
+	log.Printf("\t\tgraphs sketched: %d", numGraphs)
+	log.Printf("\t\tgraph windows processed: %d", numWindows)
+	log.Printf("\t\tmean approximate distinct sketches per graph: %.2f%%", (propDistinctSketches/float64(numGraphs))*100)
 
 	// add the graphs to the pipeline info
 	proc.info.Store = graphStore
@@ -128,7 +168,7 @@ func (proc *GraphSketcher) Run() {
 // SketchIndexer is a pipeline process that adds sketches to the LSH Ensemble
 type SketchIndexer struct {
 	info  *Info
-	input chan *lshforest.Key
+	input chan map[string][]lshforest.Key
 }
 
 // NewSketchIndexer is the constructor
@@ -146,41 +186,39 @@ func (proc *SketchIndexer) Run() {
 
 	// create a tmp map of domain records and the key lookup
 	domainRecMap := make(map[int]*lshensemble.DomainRecord)
-	keyLookup := make(map[string]*lshforest.Key) // links sketches to the graph windows
+	keyLookup := make(map[string]lshforest.Key)
+	numKmers := (proc.info.WindowSize - proc.info.KmerSize) + 1
 
-	// collect the window sketches
+	// collect the window sketches from each graph
 	sketchCount := 0
-	for window := range proc.input {
+	for windowMap := range proc.input {
 
-		// convert the graph window data to a key
-		key := fmt.Sprintf("g%dn%do%dp%d", window.GraphID, window.Node, window.OffSet, len(window.Ref))
+		// check the windows for each node of the graph
+		for keyBase, windows := range windowMap {
+			for i, window := range windows {
 
-		// use the key to check if the window has been seen before
-		if existingWindow, ok := keyLookup[key]; ok {
+				// use the iterator to distinguish keys which have multiple windows
+				key := fmt.Sprintf("%v-%d", keyBase, i)
 
-			// check if the sketches match
-			if misc.Uint64SliceEqual(existingWindow.GetSketch(), window.Sketch) {
-				misc.ErrorCheck(fmt.Errorf("duplicate graph window sketches not collapsed"))
+				// create a domain record for this sketch
+				domainRecMap[sketchCount] = &lshensemble.DomainRecord{
+					Key:       key,
+					Size:      numKmers,
+					Signature: window.Sketch,
+				}
+
+				// add the new window to the lookup
+				if _, ok := keyLookup[key]; ok {
+					misc.ErrorCheck(fmt.Errorf("duplicate key created: %v", key))
+				}
+				keyLookup[key] = window
+				sketchCount++
 			}
-
-			// update the new window key to adjust for several sketches in this region
-			key = fmt.Sprintf("%v-%d", key, sketchCount)
 		}
-
-		// create a domain record for this sketch
-		domainRecMap[sketchCount] = &lshensemble.DomainRecord{
-			Key:       key,
-			Size:      (proc.info.WindowSize - proc.info.KmerSize) + 1,
-			Signature: window.Sketch,
-		}
-
-		// add the new window to the lookup
-		keyLookup[key] = window
-		sketchCount++
 	}
 
 	// store the domain records
-	index := graph.PrepareIndex(domainRecMap, keyLookup, proc.info.NumPart, proc.info.MaxK, proc.info.WindowSize+proc.info.KmerSize-1, proc.info.SketchSize)
+	index := graph.PrepareIndex(domainRecMap, keyLookup, proc.info.NumPart, proc.info.MaxK, numKmers, proc.info.SketchSize)
 	proc.info.AttachDB(index)
 	log.Printf("\tnumber of sketches added to the LSH Ensemble index: %d\n", sketchCount)
 }

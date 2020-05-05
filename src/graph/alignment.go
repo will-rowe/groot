@@ -13,7 +13,7 @@ import (
 func (GrootGraph *GrootGraph) AlignRead(read *seqio.FASTQread, mapping *lshforest.Key, references []*sam.Reference) ([]*sam.Record, error) {
 
 	// TODO: move this hardcoded value to CLI options
-	MaxClip := 2
+	MaxClip := 1
 
 	// store the ID of the first node in the seed
 	seedNodeID := mapping.Node
@@ -29,10 +29,11 @@ func (GrootGraph *GrootGraph) AlignRead(read *seqio.FASTQread, mapping *lshfores
 	startPos := make(map[int]int)
 	startClippedBases := 0
 	endClippedBases := 0
+	origOffSet := mapping.OffSet
 
 	// 1. exact alignment and seed offset shuffling
 	var shuffles int
-	for shuffles = 0; shuffles <= int(mapping.MergeSpan+3); shuffles++ {
+	for shuffles = 0; shuffles <= int(mapping.MergeSpan+mapping.WindowSize); shuffles++ {
 		IDs, startPos = GrootGraph.performAlignment(nodeLookup, &read.Seq, int(mapping.OffSet))
 		if len(IDs) > 0 {
 			break
@@ -40,16 +41,36 @@ func (GrootGraph *GrootGraph) AlignRead(read *seqio.FASTQread, mapping *lshfores
 		mapping.OffSet++
 	}
 
-	/*
-		TODO:
-		// 2. reverse seed shuffling (start at last base of the input edge)
-	*/
+	// reset the offset
+	mapping.OffSet = origOffSet
+
+	// 2. exact alignment and seed node shuffling
+	if len(IDs) == 0 {
+		for shuffledNode := range mapping.ContainedNodes {
+			var shuffles int
+			mapping.OffSet = 0
+			for shuffles = 0; shuffles <= 10; shuffles++ {
+				nodeLookup, ok := GrootGraph.NodeLookup[shuffledNode]
+				if !ok {
+					return nil, fmt.Errorf("could not perform node lookup during alignment - possible incorrect seed")
+				}
+				IDs, startPos = GrootGraph.performAlignment(nodeLookup, &read.Seq, int(mapping.OffSet))
+				if len(IDs) > 0 {
+					break
+				}
+				mapping.OffSet++
+			}
+			if len(IDs) > 0 {
+				break
+			}
+		}
+
+		// reset the offset
+		mapping.OffSet = origOffSet
+	}
 
 	// 3. hard clipping the start of the read
 	if len(IDs) == 0 {
-
-		// reset the offset
-		mapping.OffSet -= uint32(shuffles)
 
 		// make a copy of the sequence for clipping
 		clippedSeq := read.Seq

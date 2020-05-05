@@ -41,6 +41,7 @@ func main() {
 
 	// process the records and keep all alignments in a map
 	readMap := make(map[string][]sam.Record)
+	multimapCount := 0
 	for {
 		record, err := b.Read()
 		if err == io.EOF {
@@ -59,6 +60,9 @@ func main() {
 		if _, ok := readMap[record.Name]; !ok {
 			readMap[record.Name] = []sam.Record{*record}
 		} else {
+			if len(readMap[record.Name]) == 1 {
+				multimapCount++
+			}
 			readMap[record.Name] = append(readMap[record.Name], *record)
 		}
 	}
@@ -66,9 +70,11 @@ func main() {
 	// work out the number of unaligned reads
 	aligned := float64(len(readMap))
 	unAligned := float64(*numTestReads) - aligned
-	percAligned := float64(aligned) / float64(*numTestReads) * 100
+	percAligned := aligned / float64(*numTestReads) * 100
+	percMulti := float64(multimapCount) / float64(*numTestReads) * 100
 	percUnaligned := float64(unAligned) / float64(*numTestReads) * 100
 	fmt.Printf("%.0f\t%.2f%%\t\taligned reads\n", aligned, percAligned)
+	fmt.Printf("%d\t%.2f%%\t\tmultialigned reads\n", multimapCount, percMulti)
 	fmt.Printf("%.0f\t%.2f%%\t\tunaligned reads\n", unAligned, percUnaligned)
 
 	// record false negatives and false positives

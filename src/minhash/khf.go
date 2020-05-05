@@ -3,19 +3,15 @@ package minhash
 import (
 	"fmt"
 	"math"
-)
 
-// HashValueSize is 8, the number of byte used for each hash value
-const HashValueSize = 8
-const seed = 42
+	"github.com/will-rowe/nthash"
+)
 
 // KHFsketch is the structure for the K-Hash Functions MinHash sketch of a set of k-mers
 type KHFsketch struct {
 	kmerSize   uint
 	sketchSize uint
 	sketch     []uint64
-	hf1        func(b []byte) uint64
-	hf2        func(b []byte) uint64
 }
 
 // NewKHFsketch is the constructor for a KHFsketch data structure
@@ -36,59 +32,21 @@ func NewKHFsketch(k, s uint) *KHFsketch {
 }
 
 // AddSequence is a method to decompose a read to canonical kmers, hash them and add any minimums to the sketch
-func (mh *KHFsketch) AddSequence(sequence []byte) error {
+func (KHFsketch *KHFsketch) AddSequence(sequence []byte) error {
 
-	// check the sequence is long enough for given k
-	if uint(len(sequence)) < mh.kmerSize {
-		return fmt.Errorf("sequence length (%d) is short than k-mer length (%d)", len(sequence), mh.kmerSize)
+	// initiate the rolling nthash
+	hasher, err := nthash.NewHasher(&sequence, KHFsketch.kmerSize)
+	if err != nil {
+		return err
 	}
 
-	// a holder for evalutating two k-mers
-	kmers := [2]uint64{0, 0}
+	// range over the output of the hasher, where each iteration is a set of hash values for a k-mer
+	for multiHashes := range hasher.MultiHash(CANONICAL, KHFsketch.sketchSize) {
 
-	// bitmask is used to update the previous k-mer with the next base
-	bitmask := (uint64(1) << uint64(2*mh.kmerSize)) - uint64(1)
-	bitshift := uint64(2 * (mh.kmerSize - 1))
-
-	for i := 0; i < len(sequence); i++ {
-
-		// get the nucleotide and convert to uint8
-		c := seqNT4table[sequence[i]]
-
-		// if the nucleotide == N
-		if c > 3 {
-
-			// TODO: handle these
-
-		}
-
-		// get the forward k-mer
-		kmers[0] = (kmers[0]<<2 | uint64(c)) & bitmask
-
-		// get the reverse k-mer
-		kmers[1] = (kmers[1] >> 2) | (uint64(3)-uint64(c))<<bitshift
-
-		// get the span of the k-mer
-		if uint(i+1) < mh.kmerSize {
-			continue
-		}
-
-		// set the canonical k-mer
-		var strand uint
-		if kmers[0] > kmers[1] {
-			strand = 1
-		}
-
-		// get the two base hashes
-		//hv1 := hash64(kmers[strand], bitmask)<<8 | uint64(mh.kmerSize)
-		//hv2 := splitmix64(kmers[strand])
-		hv2 := hash64(kmers[strand], bitmask)<<8 | uint64(mh.kmerSize)
-
-		// try adding the k-mer in each slot of the sketch
-		for j, min := range mh.sketch {
-			hv := kmers[strand] + uint64(j)*hv2
-			if hv < min {
-				mh.sketch[j] = hv
+		// evaluate if each hash value is lower than the existing one in the appropriate sketch position
+		for i, min := range KHFsketch.sketch {
+			if multiHashes[i] < min {
+				KHFsketch.sketch[i] = multiHashes[i]
 			}
 		}
 	}
@@ -97,8 +55,8 @@ func (mh *KHFsketch) AddSequence(sequence []byte) error {
 }
 
 // GetSketch is a method to return the sketch held by a MinHash KHF sketch object
-func (mh *KHFsketch) GetSketch() []uint64 {
-	return mh.sketch
+func (KHFsketch *KHFsketch) GetSketch() []uint64 {
+	return KHFsketch.sketch
 }
 
 // GetSimilarity estimates the similarity between two k-mer sets based on the KHF sketch
