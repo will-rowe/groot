@@ -183,8 +183,9 @@ func (proc *SketchIndexer) Connect(previous *GraphSketcher) {
 // Run is the method to run this process, which satisfies the pipeline interface
 func (proc *SketchIndexer) Run() {
 
-	// store the sketched windows in a map for now
-	windowMap := make(map[string]lshe.Key)
+	// create the containment index struct
+	numKmers := ((proc.info.WindowSize - proc.info.KmerSize) + 1)
+	index := lshe.InitIndex(proc.info.NumPart, proc.info.MaxK, numKmers, proc.info.SketchSize)
 
 	// collect the window sketches from each graph
 	sketchCount := 0
@@ -197,19 +198,14 @@ func (proc *SketchIndexer) Run() {
 				// use the iterator to distinguish windows from the same start node
 				lookup := fmt.Sprintf("%v-%d", keyBase, i)
 
-				// add the new window to the lookup
-				if _, ok := windowMap[lookup]; ok {
-					misc.ErrorCheck(fmt.Errorf("duplicate window key created: %v", lookup))
-				}
-				windowMap[lookup] = window
+				// add to the index
+				misc.ErrorCheck(index.AddWindow(lookup, window))
 				sketchCount++
 			}
 		}
 	}
 
-	// store the windows
-	numKmers := (proc.info.WindowSize - proc.info.KmerSize) + 1
-	index := lshe.PrepareIndex(windowMap, proc.info.NumPart, proc.info.MaxK, numKmers, proc.info.SketchSize)
+	// the index has all the windows, now add it to the runtime info for serialisation
 	proc.info.AttachDB(index)
 	log.Printf("\tnumber of sketches added to the LSH Ensemble index: %d\n", sketchCount)
 }

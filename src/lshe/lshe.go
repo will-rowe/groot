@@ -48,18 +48,24 @@ type ContainmentIndex struct {
 	locker      sync.Mutex               // locker to control access to the WindowLookup
 }
 
-// PrepareIndex prepares a LSH Ensemble index from a map of domain records and a map of keys-windows
-func PrepareIndex(sketchedWindows map[string]Key, numPart, maxK, numWindowKmers, sketchSize int) *ContainmentIndex {
-
-	// TODO: add some error checking
-
+// InitIndex will get a containment index struct ready
+func InitIndex(numPart, maxK, numWindowKmers, sketchSize int) *ContainmentIndex {
 	return &ContainmentIndex{
 		NumPart:        numPart,
 		MaxK:           maxK,
 		NumWindowKmers: numWindowKmers,
 		SketchSize:     sketchSize,
-		WindowLookup:   sketchedWindows,
+		WindowLookup:   make(map[string]Key),
 	}
+}
+
+// AddWindow will add a window to a ContainmentIndex
+func (ContainmentIndex *ContainmentIndex) AddWindow(windowLookup string, window Key) error {
+	if _, ok := ContainmentIndex.WindowLookup[windowLookup]; ok {
+		return fmt.Errorf("duplicate window key can't be inserted into index: %v", windowLookup)
+	}
+	ContainmentIndex.WindowLookup[windowLookup] = window
+	return nil
 }
 
 // Dump is a method to write a containment index to disk
