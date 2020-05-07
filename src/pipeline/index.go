@@ -74,12 +74,12 @@ func (proc *MSAconverter) Run() {
 type GraphSketcher struct {
 	info   *Info
 	input  chan *graph.GrootGraph
-	output chan map[string][]lshe.Key
+	output chan map[string]lshe.Keys
 }
 
 // NewGraphSketcher is the constructor
 func NewGraphSketcher(info *Info) *GraphSketcher {
-	return &GraphSketcher{info: info, output: make(chan map[string][]lshe.Key, BUFFERSIZE)}
+	return &GraphSketcher{info: info, output: make(chan map[string]lshe.Keys, BUFFERSIZE)}
 }
 
 // Connect is the method to connect the MSAconverter to some data source
@@ -167,7 +167,7 @@ func (proc *GraphSketcher) Run() {
 // SketchIndexer is a pipeline process that adds sketches to the LSH Ensemble
 type SketchIndexer struct {
 	info  *Info
-	input chan map[string][]lshe.Key
+	input chan map[string]lshe.Keys
 }
 
 // NewSketchIndexer is the constructor

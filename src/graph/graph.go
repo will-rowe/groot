@@ -226,7 +226,7 @@ func (GrootGraph *GrootGraph) GetSketchStats() (int, int, int, error) {
 }
 
 // WindowGraph is a method to slide a window over each path through the graph, sketching the paths and getting window information
-func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) (map[string][]lshe.Key, error) {
+func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) (map[string]lshe.Keys, error) {
 
 	// get the linear sequences for this graph
 	pathSeqs, err := GrootGraph.Graph2Seqs()
@@ -347,7 +347,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 	}()
 
 	// collect sketched windows from all paths and merge identical windows from different paths if same start node+offset
-	windowLookup := make(map[string][]lshe.Key)
+	windowLookup := make(map[string]lshe.Keys)
 	for window := range pathWindows {
 
 		// convert the graph window data to a key that links the sketch to the graphID, start node and offset
@@ -382,7 +382,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 				GrootGraph.numDistinctSketches++
 			}
 		} else {
-			windowLookup[key] = []lshe.Key{window}
+			windowLookup[key] = lshe.Keys{window}
 			GrootGraph.numDistinctSketches++
 		}
 	}
