@@ -8,7 +8,6 @@ require (
 	github.com/biogo/hts v1.1.0
 	github.com/dgryski/go-minhash v0.0.0-20190315135803-ad340ca03076 // indirect
 	github.com/ekzhu/lshensemble v1.1.0
-	github.com/golang/protobuf v1.4.0
 	github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6 // indirect
 	github.com/pkg/profile v1.4.0
 	github.com/spf13/cobra v1.0.0

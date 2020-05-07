@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/will-rowe/groot/src/graph"
+	"github.com/will-rowe/groot/src/lshe"
 	"github.com/will-rowe/groot/src/misc"
 )
 
@@ -16,11 +16,11 @@ func TestSketching(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	lshe := &graph.ContainmentIndex{}
-	if err := lshe.Load("test-data/tmp/groot.lshe"); err != nil {
+	index := &lshe.ContainmentIndex{}
+	if err := index.Load("test-data/tmp/groot.lshe"); err != nil {
 		t.Fatal(err)
 	}
-	testParameters.AttachDB(lshe)
+	testParameters.AttachDB(index)
 
 	// run the pipeline
 	sketchingPipeline := NewPipeline()

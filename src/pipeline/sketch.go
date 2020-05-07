@@ -343,9 +343,9 @@ func (proc *ReadMapper) Run() {
 	}
 	log.Printf("\ttotal number of unmapped reads: %d\n", theBoss.receivedReadCount-theBoss.mappedCount)
 	log.Printf("\ttotal number of mapped reads: %d\n", theBoss.mappedCount)
-	log.Printf("\t\tuniquely mapped: %d\n", (theBoss.mappedCount - theBoss.multimappedCount))
-	log.Printf("\t\tmultimapped: %d\n", theBoss.multimappedCount)
-	log.Printf("\ttotal number of alignments: %d\n", theBoss.alignmentCount)
+	log.Printf("\t\tmapped to one graph: %d\n", (theBoss.mappedCount - theBoss.multimappedCount))
+	log.Printf("\t\tmapped to multiple graphs: %d\n", theBoss.multimappedCount)
+	log.Printf("\ttotal number of exact alignments: %d\n", theBoss.alignmentCount)
 
 	// send on the graphs for pruning now that the mapping is done
 	for _, g := range proc.info.Store {

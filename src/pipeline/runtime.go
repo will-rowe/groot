@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/will-rowe/groot/src/graph"
+	"github.com/will-rowe/groot/src/lshe"
 )
 
 // Info stores the runtime information
@@ -28,7 +29,7 @@ type Info struct {
 	// the following fields are not written to disk
 	Sketch    AlignCmd
 	Haplotype HaploCmd
-	db        *graph.ContainmentIndex
+	db        *lshe.ContainmentIndex
 }
 
 // AlignCmd stores the runtime info for the sketch command
@@ -37,6 +38,7 @@ type AlignCmd struct {
 	BloomFilter     bool
 	MinKmerCoverage float64
 	BAMout          string
+	NoExactAlign    bool // turn off the exact alignment and BAM output - only used by WASP currently
 }
 
 // HaploCmd stores the runtime info for the haplotype command
@@ -49,7 +51,7 @@ type HaploCmd struct {
 }
 
 // AttachDB is a method to attach a LSH Ensemble index to the runtime
-func (Info *Info) AttachDB(db *graph.ContainmentIndex) {
+func (Info *Info) AttachDB(db *lshe.ContainmentIndex) {
 	Info.db = db
 }
 

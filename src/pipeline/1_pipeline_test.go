@@ -32,8 +32,8 @@ TEST PARAMETERS
 var testParameters = &Info{
 	NumProc:              1,
 	Version:              version.GetVersion(),
-	KmerSize:             41,
-	SketchSize:           50,
+	KmerSize:             51,
+	SketchSize:           30,
 	WindowSize:           100,
 	NumPart:              8,
 	MaxK:                 4,
