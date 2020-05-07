@@ -100,9 +100,9 @@ func runSketch() {
 	log.Print("loading the graphs...")
 	log.Printf("\tnumber of variation graphs: %d\n", len(info.Store))
 	log.Print("rebuilding the LSH Ensemble...")
-	lshe := &lshe.ContainmentIndex{}
-	misc.ErrorCheck(lshe.Load(*indexDir + "/groot.lshe"))
-	info.AttachDB(lshe)
+	index := &lshe.ContainmentIndex{}
+	misc.ErrorCheck(index.Load(*indexDir + "/groot.lshe"))
+	info.AttachDB(index)
 	if *profiling {
 		log.Printf("\tloaded lshe file -> current memory usage %v", misc.PrintMemUsage())
 		runtime.GC()
