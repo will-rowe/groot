@@ -126,7 +126,7 @@ func (ContainmentIndex *ContainmentIndex) LoadFromBytes(data []byte) error {
 
 			// this is a massive kludge to fix the out of memory issue on index load in wasm
 			// see: https://github.com/golang/go/issues/32840#issuecomment-506929883
-			if runtime.GOOS == "js" && i%10000 == 0 {
+			if runtime.GOOS == "js" && i%100000 == 0 {
 				runtime.GC()
 			}
 
@@ -143,7 +143,6 @@ func (ContainmentIndex *ContainmentIndex) LoadFromBytes(data []byte) error {
 
 	// create index using equi-depth partitioning
 	ContainmentIndex.lshEnsemble, err = lshensemble.BootstrapLshEnsembleEquiDepth(ContainmentIndex.NumPart, ContainmentIndex.SketchSize, ContainmentIndex.MaxK, ContainmentIndex.numSketches, recChan)
-
 	return err
 }
 
