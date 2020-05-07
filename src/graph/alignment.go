@@ -5,12 +5,12 @@ import (
 	"sync"
 
 	"github.com/biogo/hts/sam"
-	"github.com/will-rowe/groot/src/lshforest"
+	"github.com/will-rowe/groot/src/lshe"
 	"github.com/will-rowe/groot/src/seqio"
 )
 
 // AlignRead is a method to run a read to graph hierarchical alignment
-func (GrootGraph *GrootGraph) AlignRead(read *seqio.FASTQread, mapping *lshforest.Key, references []*sam.Reference) ([]*sam.Record, error) {
+func (GrootGraph *GrootGraph) AlignRead(read *seqio.FASTQread, mapping *lshe.Key, references []*sam.Reference) ([]*sam.Record, error) {
 
 	// TODO: move this hardcoded value to CLI options
 	MaxClip := 1

@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/will-rowe/gfa"
-	"github.com/will-rowe/groot/src/lshforest"
+	"github.com/will-rowe/groot/src/lshe"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/seqio"
 )
@@ -226,7 +226,7 @@ func (GrootGraph *GrootGraph) GetSketchStats() (int, int, int, error) {
 }
 
 // WindowGraph is a method to slide a window over each path through the graph, sketching the paths and getting window information
-func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) (map[string][]lshforest.Key, error) {
+func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) (map[string][]lshe.Key, error) {
 
 	// get the linear sequences for this graph
 	pathSeqs, err := GrootGraph.Graph2Seqs()
@@ -241,7 +241,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 	}
 
 	// window each path
-	pathWindows := make(chan lshforest.Key, 100)
+	pathWindows := make(chan lshe.Key, 100)
 	var pathWG sync.WaitGroup
 	pathWG.Add(len(GrootGraph.Paths))
 	for pathID := range GrootGraph.Paths {
@@ -281,7 +281,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 			}
 
 			// hold a window until a new sketch is encountered
-			var windowHolder lshforest.Key
+			var windowHolder lshe.Key
 			sketchSent := false
 
 			// start windowing the path sequence
@@ -310,7 +310,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 
 				// if the first window, or we have just sent a window on, init a windowHolder
 				if !merge {
-					windowHolder = lshforest.Key{
+					windowHolder = lshe.Key{
 						GraphID:        GrootGraph.GraphID,
 						Node:           segs[i],
 						OffSet:         offSets[i],
@@ -347,7 +347,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 	}()
 
 	// collect sketched windows from all paths and merge identical windows from different paths if same start node+offset
-	windowLookup := make(map[string][]lshforest.Key)
+	windowLookup := make(map[string][]lshe.Key)
 	for window := range pathWindows {
 
 		// convert the graph window data to a key that links the sketch to the graphID, start node and offset
@@ -361,7 +361,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 			for _, existingWindow := range existingWindowLocation {
 
 				// if the sketches match, merge the window into the existing one
-				if misc.Uint64SliceEqual(existingWindow.GetSketch(), window.Sketch) {
+				if misc.Uint64SliceEqual(existingWindow.Sketch, window.Sketch) {
 					for node, freq := range window.ContainedNodes {
 						existingWindow.ContainedNodes[node] += freq
 					}
@@ -382,7 +382,7 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 				GrootGraph.numDistinctSketches++
 			}
 		} else {
-			windowLookup[key] = []lshforest.Key{window}
+			windowLookup[key] = []lshe.Key{window}
 			GrootGraph.numDistinctSketches++
 		}
 	}

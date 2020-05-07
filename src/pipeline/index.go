@@ -10,10 +10,9 @@ import (
 	"sync"
 
 	"github.com/biogo/biogo/seq/multi"
-	"github.com/ekzhu/lshensemble"
 	"github.com/will-rowe/gfa"
 	"github.com/will-rowe/groot/src/graph"
-	"github.com/will-rowe/groot/src/lshforest"
+	"github.com/will-rowe/groot/src/lshe"
 	"github.com/will-rowe/groot/src/misc"
 )
 
@@ -75,12 +74,12 @@ func (proc *MSAconverter) Run() {
 type GraphSketcher struct {
 	info   *Info
 	input  chan *graph.GrootGraph
-	output chan map[string][]lshforest.Key
+	output chan map[string][]lshe.Key
 }
 
 // NewGraphSketcher is the constructor
 func NewGraphSketcher(info *Info) *GraphSketcher {
-	return &GraphSketcher{info: info, output: make(chan map[string][]lshforest.Key, BUFFERSIZE)}
+	return &GraphSketcher{info: info, output: make(chan map[string][]lshe.Key, BUFFERSIZE)}
 }
 
 // Connect is the method to connect the MSAconverter to some data source
@@ -168,7 +167,7 @@ func (proc *GraphSketcher) Run() {
 // SketchIndexer is a pipeline process that adds sketches to the LSH Ensemble
 type SketchIndexer struct {
 	info  *Info
-	input chan map[string][]lshforest.Key
+	input chan map[string][]lshe.Key
 }
 
 // NewSketchIndexer is the constructor
@@ -184,41 +183,33 @@ func (proc *SketchIndexer) Connect(previous *GraphSketcher) {
 // Run is the method to run this process, which satisfies the pipeline interface
 func (proc *SketchIndexer) Run() {
 
-	// create a tmp map of domain records and the key lookup
-	domainRecMap := make(map[int]*lshensemble.DomainRecord)
-	keyLookup := make(map[string]lshforest.Key)
-	numKmers := (proc.info.WindowSize - proc.info.KmerSize) + 1
+	// store the sketched windows in a map for now
+	windowMap := make(map[string]lshe.Key)
 
 	// collect the window sketches from each graph
 	sketchCount := 0
-	for windowMap := range proc.input {
+	for graphWindowMap := range proc.input {
 
 		// check the windows for each node of the graph
-		for keyBase, windows := range windowMap {
+		for keyBase, windows := range graphWindowMap {
 			for i, window := range windows {
 
-				// use the iterator to distinguish keys which have multiple windows
-				key := fmt.Sprintf("%v-%d", keyBase, i)
-
-				// create a domain record for this sketch
-				domainRecMap[sketchCount] = &lshensemble.DomainRecord{
-					Key:       key,
-					Size:      numKmers,
-					Signature: window.Sketch,
-				}
+				// use the iterator to distinguish windows from the same start node
+				lookup := fmt.Sprintf("%v-%d", keyBase, i)
 
 				// add the new window to the lookup
-				if _, ok := keyLookup[key]; ok {
-					misc.ErrorCheck(fmt.Errorf("duplicate key created: %v", key))
+				if _, ok := windowMap[lookup]; ok {
+					misc.ErrorCheck(fmt.Errorf("duplicate window key created: %v", lookup))
 				}
-				keyLookup[key] = window
+				windowMap[lookup] = window
 				sketchCount++
 			}
 		}
 	}
 
-	// store the domain records
-	index := graph.PrepareIndex(domainRecMap, keyLookup, proc.info.NumPart, proc.info.MaxK, numKmers, proc.info.SketchSize)
+	// store the windows
+	numKmers := (proc.info.WindowSize - proc.info.KmerSize) + 1
+	index := lshe.PrepareIndex(windowMap, proc.info.NumPart, proc.info.MaxK, numKmers, proc.info.SketchSize)
 	proc.info.AttachDB(index)
 	log.Printf("\tnumber of sketches added to the LSH Ensemble index: %d\n", sketchCount)
 }

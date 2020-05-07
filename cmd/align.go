@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
-	"github.com/will-rowe/groot/src/graph"
+	"github.com/will-rowe/groot/src/lshe"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/pipeline"
 	"github.com/will-rowe/groot/src/version"
@@ -100,7 +100,7 @@ func runSketch() {
 	log.Print("loading the graphs...")
 	log.Printf("\tnumber of variation graphs: %d\n", len(info.Store))
 	log.Print("rebuilding the LSH Ensemble...")
-	lshe := &graph.ContainmentIndex{}
+	lshe := &lshe.ContainmentIndex{}
 	misc.ErrorCheck(lshe.Load(*indexDir + "/groot.lshe"))
 	info.AttachDB(lshe)
 	if *profiling {

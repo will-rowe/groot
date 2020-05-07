@@ -6,13 +6,13 @@ import (
 
 	"github.com/biogo/hts/sam"
 	"github.com/will-rowe/groot/src/graph"
-	"github.com/will-rowe/groot/src/lshforest"
+	"github.com/will-rowe/groot/src/lshe"
 	"github.com/will-rowe/groot/src/misc"
 	"github.com/will-rowe/groot/src/seqio"
 )
 
 type graphMinionPair struct {
-	mappings lshforest.Keys
+	mappings lshe.Keys
 	read     seqio.FASTQread
 }
 
@@ -34,7 +34,6 @@ func newGraphMinion(id uint32, graph *graph.GrootGraph, alignmentChan chan *sam.
 		graph:         graph,
 		inputChannel:  make(chan *graphMinionPair, BUFFERSIZE),
 		outputChannel: alignmentChan,
-		runAlignment:  true, // setting this to True for now to replicate groot behaviour - can be used later to run groot haplotype workflow etc.
 		references:    refs,
 		boss:          boss,
 	}
@@ -66,7 +65,7 @@ func (graphMinion *graphMinion) start(wg *sync.WaitGroup) {
 				misc.ErrorCheck(graphMinion.graph.IncrementSubPath(mapping.ContainedNodes, kmerCount))
 
 				// perform the alignment if requested
-				if !graphMinion.runAlignment {
+				if graphMinion.boss.info.Sketch.NoExactAlign {
 					continue
 				}
 
