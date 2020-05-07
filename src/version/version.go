@@ -9,7 +9,7 @@ const major = 1
 const minor = 1
 
 // patch is the patch version number
-const patch = 0
+const patch = 1
 
 // GetVersion returns the full version string for the current GROOT software
 func GetVersion() string {
