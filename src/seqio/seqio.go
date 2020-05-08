@@ -83,26 +83,52 @@ func (Sequence *Sequence) BaseCheck() error {
 		case 'N':
 			Sequence.Seq[i] = byte(base)
 		default:
-			//return fmt.Errorf("non \"A\\C\\T\\G\\N\\-\" base (%v)", string(FASTQread.Seq[i]))
+			//return fmt.Errorf("non \"A\\C\\T\\G\\N\\-\" base (%v)", string(r.Seq[i]))
 			Sequence.Seq[i] = byte('N')
 		}
 	}
 	return nil
 }
 
+// DeepCopy is a method to make a copy of a FASTQread
+func (r *FASTQread) DeepCopy() *FASTQread {
+	newSeq := Sequence{
+		ID:  make([]byte, len(r.ID)),
+		Seq: make([]byte, len(r.Seq)),
+	}
+	for i := 0; i < len(r.ID); i++ {
+		newSeq.ID[i] = r.ID[i]
+	}
+	for i := 0; i < len(r.Seq); i++ {
+		newSeq.Seq[i] = r.Seq[i]
+	}
+	newFASTQ := FASTQread{
+		Sequence: newSeq,
+		Misc:     make([]byte, len(r.Misc)),
+		Qual:     make([]byte, len(r.Qual)),
+	}
+	for i := 0; i < len(r.Misc); i++ {
+		newFASTQ.Misc[i] = r.Misc[i]
+	}
+	for i := 0; i < len(r.Qual); i++ {
+		newFASTQ.Qual[i] = r.Qual[i]
+	}
+	return &newFASTQ
+}
+
 // RevComplement is a method to reverse complement a sequence held by a FASTQread
-// TODO: the quality scores are currently not reversed by this method
-func (FASTQread *FASTQread) RevComplement() {
-	for i, j := 0, len(FASTQread.Seq); i < j; i++ {
-		FASTQread.Seq[i] = complementBases[FASTQread.Seq[i]]
+func (r *FASTQread) RevComplement() {
+	for i, j := 0, len(r.Seq); i < j; i++ {
+		r.Seq[i] = complementBases[r.Seq[i]]
 	}
-	for i, j := 0, len(FASTQread.Seq)-1; i <= j; i, j = i+1, j-1 {
-		FASTQread.Seq[i], FASTQread.Seq[j] = FASTQread.Seq[j], FASTQread.Seq[i]
+	for i, j := 0, len(r.Seq)-1; i <= j; i, j = i+1, j-1 {
+		r.Seq[i], r.Seq[j] = r.Seq[j], r.Seq[i]
+		r.Qual[i], r.Qual[j] = r.Qual[j], r.Qual[i]
 	}
-	if FASTQread.RC == true {
-		FASTQread.RC = false
+	if r.RC == true {
+		r.RC = false
 	} else {
-		FASTQread.RC = true
+		r.RC = true
 	}
 }
 
@@ -112,10 +138,10 @@ func (FASTQread *FASTQread) RevComplement() {
 -2. sum these values across the read and trim at the index where the sum in minimal
 -3. return the high-quality region
 */
-func (FASTQread *FASTQread) QualTrim(minQual int) {
+func (r *FASTQread) QualTrim(minQual int) {
 	start, qualSum, qualMax := 0, 0, 0
-	end := len(FASTQread.Qual)
-	for i, qual := range FASTQread.Qual {
+	end := len(r.Qual)
+	for i, qual := range r.Qual {
 		qualSum += minQual - (int(qual) - encoding)
 		if qualSum < 0 {
 			break
@@ -126,8 +152,8 @@ func (FASTQread *FASTQread) QualTrim(minQual int) {
 		}
 	}
 	qualSum, qualMax = 0, 0
-	for i, j := 0, len(FASTQread.Qual)-1; j >= i; j-- {
-		qualSum += minQual - (int(FASTQread.Qual[j]) - encoding)
+	for i, j := 0, len(r.Qual)-1; j >= i; j-- {
+		qualSum += minQual - (int(r.Qual[j]) - encoding)
 		if qualSum < 0 {
 			break
 		}
@@ -139,8 +165,8 @@ func (FASTQread *FASTQread) QualTrim(minQual int) {
 	if start >= end {
 		start, end = 0, 0
 	}
-	FASTQread.Seq = FASTQread.Seq[start:end]
-	FASTQread.Qual = FASTQread.Qual[start:end]
+	r.Seq = r.Seq[start:end]
+	r.Qual = r.Qual[start:end]
 }
 
 // NewFASTQread generates a new fastq read from 4 lines of data
