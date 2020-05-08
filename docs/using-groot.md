@@ -120,6 +120,10 @@ gunzip -c file.gz | ./groot align -i grootIndex -p 8 | ./groot report
 
 Multiple FASTQ files can be specified as input, however all are treated as the same sample and paired-end info isn't used. To specify multiple files, make sure they are comma separated (`-f fileA.fq,fileB.fq`) or use gunzip/cat with a wildcard (gunzip -c \*.fq.gz | groot...).
 
+Some more flags that can be used:
+
+- `--noAlign`: if set, no exact alignment will be performed (graphs will still be weighted using approximate read mappings)
+
 ### report
 
 The `report` subcommand is used to processes graph traversals and generate a resistome profile for a sample. Here is an example:
