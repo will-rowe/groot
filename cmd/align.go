@@ -19,6 +19,7 @@ import (
 var (
 	fastq                *[]string                                                         // list of FASTQ files to align
 	fasta                *bool                                                             // flag to treat input as fasta sequences
+	noAlign              *bool                                                             // flag to prevent exact alignments
 	containmentThreshold *float64                                                          // the containment threshold for the LSH ensemble
 	minKmerCoverage      *float64                                                          // the minimum k-mer coverage per base of a segment
 	graphDir             *string                                                           // directory to save gfa graphs to
@@ -42,6 +43,7 @@ var alignCmd = &cobra.Command{
 func init() {
 	fastq = alignCmd.Flags().StringSliceP("fastq", "f", []string{}, "FASTQ file(s) to align")
 	fasta = alignCmd.Flags().Bool("fasta", false, "if set, the input will be treated as fasta sequence(s) (experimental feature)")
+	noAlign = alignCmd.Flags().Bool("noAlign", false, "if set, no exact alignment will be performed - graphs will be weighted using approximate read mappings")
 	containmentThreshold = alignCmd.Flags().Float64P("contThresh", "t", 0.99, "containment threshold for the LSH ensemble")
 	minKmerCoverage = alignCmd.Flags().Float64P("minKmerCov", "c", 1.0, "minimum number of k-mers covering each base of a graph segment")
 	graphDir = alignCmd.PersistentFlags().StringP("graphDir", "g", defaultGraphDir, "directory to save variation graphs to")
@@ -115,8 +117,12 @@ func runSketch() {
 	info.Sketch = pipeline.AlignCmd{
 		Fasta:           *fasta,
 		MinKmerCoverage: *minKmerCoverage,
+		NoExactAlign:    *noAlign,
 	}
 	log.Printf("\tcontainment threshold: %.2f\n", info.ContainmentThreshold)
+	if *noAlign {
+		log.Printf("\tprevent exact alignments and using approximated mapping only\n")
+	}
 
 	// create the pipeline
 	log.Printf("initialising alignment pipeline...")

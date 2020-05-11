@@ -1,8 +1,8 @@
 package pipeline
 
 import (
+	"fmt"
 	"io"
-	"log"
 	"os"
 	"sync"
 	"time"
@@ -20,7 +20,7 @@ type theBoss struct {
 	refSAMheaders       map[int][]*sam.Reference // map of SAM headers for each reference sequence, indexed by path ID
 	reads               chan *seqio.FASTQread    // the boss uses this channel to receive data from the main sketching pipeline
 	alignments          chan *sam.Record         // used to receive alignments from the graph minions
-	outFile             io.Writer                // destination for the BAM output
+	bamwriter           *bam.Writer              // destination for the BAM output
 	receivedReadCount   int                      // the number of reads the boss is sent during it's lifetime
 	mappedCount         int                      // the total number of reads that were successful mapped to at least one graph
 	multimappedCount    int                      // the total number of reads that had mappings to multiple graphs
@@ -33,7 +33,7 @@ func newBoss(runtimeInfo *Info, inputChan chan *seqio.FASTQread) *theBoss {
 	return &theBoss{
 		info:              runtimeInfo,
 		reads:             inputChan,
-		outFile:           os.Stdout,
+		alignments:        make(chan *sam.Record, BUFFERSIZE),
 		receivedReadCount: 0,
 		mappedCount:       0,
 		multimappedCount:  0,
@@ -41,8 +41,8 @@ func newBoss(runtimeInfo *Info, inputChan chan *seqio.FASTQread) *theBoss {
 	}
 }
 
-// mapReads is a method to start off the minions to map and align reads, the minions to augment graphs, and collate the alignments
-func (theBoss *theBoss) mapReads() error {
+// setupBAM will set up the BAM STDOUT for reporting exact graph alignments
+func (theBoss *theBoss) setupBAM() error {
 
 	// get the SAM headers
 	samHeaders, err := theBoss.info.Store.GetSAMrefs()
@@ -50,7 +50,6 @@ func (theBoss *theBoss) mapReads() error {
 		return err
 	}
 	theBoss.refSAMheaders = samHeaders
-	theBoss.alignments = make(chan *sam.Record, BUFFERSIZE)
 
 	// get program info for SAM header (unique ID, name, command, previous program ID, version)
 	programInfo := sam.NewProgram("1", "groot", "groot align", "", version.GetVersion())
@@ -84,10 +83,36 @@ func (theBoss *theBoss) mapReads() error {
 		return err
 	}
 
+	// use a BAM file or STDOUT (TODO: not exposed to CLI yet)
+	var fh io.Writer
+	if theBoss.info.Sketch.BAMout != "" {
+		var err error
+		fh, err = os.Create(theBoss.info.Sketch.BAMout)
+		if err != nil {
+			return (fmt.Errorf("could not open file for BAM writing: %v", err))
+		}
+	} else {
+		fh = os.Stdout
+	}
+
 	// create the bam writer and write the header
-	bw, err := bam.NewWriter(theBoss.outFile, header, 0)
+	bw, err := bam.NewWriter(fh, header, 0)
 	if err != nil {
 		return err
+	}
+	theBoss.bamwriter = bw
+	return nil
+}
+
+// mapReads is a method to start off the minions to map and align reads, the minions to augment graphs, and collate the alignments
+func (theBoss *theBoss) mapReads() error {
+	theBoss.alignments = make(chan *sam.Record, BUFFERSIZE)
+
+	// set up the BAM if exact alignment is requested
+	if !theBoss.info.Sketch.NoExactAlign {
+		if err := theBoss.setupBAM(); err != nil {
+			return err
+		}
 	}
 
 	// setup the waitgroups for the sketching and graphing minions
@@ -96,15 +121,14 @@ func (theBoss *theBoss) mapReads() error {
 
 	// launch the graph minions (one minion per graph in the index)
 	theBoss.graphMinionRegister = make([]*graphMinion, len(theBoss.info.Store))
-	for graphID, graph := range theBoss.info.Store {
+	for _, graph := range theBoss.info.Store {
 
 		// create, start and register the graph minion
-		minion := newGraphMinion(graphID, graph, theBoss.alignments, theBoss.refSAMheaders[int(graphID)], theBoss)
+		minion := newGraphMinion(theBoss, graph)
 		wg2.Add(1)
 		minion.start(&wg2)
-		theBoss.graphMinionRegister[graphID] = minion
+		theBoss.graphMinionRegister[graph.GraphID] = minion
 	}
-	log.Printf("\tgraph workers: %d", len(theBoss.graphMinionRegister))
 
 	// launch the sketching minions (one per CPU)
 	for i := 0; i < theBoss.info.NumProc; i++ {
@@ -149,18 +173,21 @@ func (theBoss *theBoss) mapReads() error {
 				if err != nil {
 					panic(err)
 				}
+
+				// if multiple graphs are returned, we need to deep copy the read
+				deepCopy := false
+				if len(results) > 1 {
+					deepCopy = true
+				}
+
+				// augment graphs and optionally perform exact alignment
 				for graphID, hits := range results {
-
-					// make a copy of the read
-					readCopy := seqio.FASTQread{
-						Sequence: read.Sequence,
-						Misc:     read.Misc,
-						Qual:     read.Qual,
-						RC:       read.RC,
+					if deepCopy {
+						readCopy := *read.DeepCopy()
+						theBoss.graphMinionRegister[graphID].inputChannel <- &graphMinionPair{hits, readCopy}
+					} else {
+						theBoss.graphMinionRegister[graphID].inputChannel <- &graphMinionPair{hits, *read}
 					}
-
-					// send the windows to the correct go routine for read alignment and graph augmentation
-					theBoss.graphMinionRegister[graphID].inputChannel <- &graphMinionPair{hits, readCopy}
 				}
 
 				// update counts
@@ -201,11 +228,15 @@ func (theBoss *theBoss) mapReads() error {
 		//	os.Exit(1)
 		//}
 		theBoss.alignmentCount++
-		if err := bw.Write(record); err != nil {
+		if err := theBoss.bamwriter.Write(record); err != nil {
 			return err
 		}
 	}
 
 	// close the bam writer and return to the completed boss to the pipeline
-	return bw.Close()
+	var err error
+	if !theBoss.info.Sketch.NoExactAlign {
+		err = theBoss.bamwriter.Close()
+	}
+	return err
 }

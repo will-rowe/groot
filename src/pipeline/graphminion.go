@@ -18,29 +18,31 @@ type graphMinionPair struct {
 
 // graphMinion holds a graph and is responsible for augmenting the paths when new mapping data arrives
 type graphMinion struct {
-	id            uint32
-	graph         *graph.GrootGraph
-	inputChannel  chan *graphMinionPair
-	outputChannel chan *sam.Record
-	runAlignment  bool
-	references    []*sam.Reference // the SAM references for each path in this graph
-	boss          *theBoss         // pointer to the boss so the minion can access the runtime info (e.g. k-mer size)
+	boss         *theBoss // pointer to the boss so the minion can access the runtime info (e.g. k-mer size) and channels etc
+	id           uint32   // id corresponds to the graphID
+	graph        *graph.GrootGraph
+	inputChannel chan *graphMinionPair
+	runAlignment bool
+	references   []*sam.Reference // the SAM references for each path in this graph
 }
 
 // newGraphMinion is the constructor function
-func newGraphMinion(id uint32, graph *graph.GrootGraph, alignmentChan chan *sam.Record, refs []*sam.Reference, boss *theBoss) *graphMinion {
+func newGraphMinion(boss *theBoss, graph *graph.GrootGraph) *graphMinion {
 	return &graphMinion{
-		id:            id,
-		graph:         graph,
-		inputChannel:  make(chan *graphMinionPair, BUFFERSIZE),
-		outputChannel: alignmentChan,
-		references:    refs,
-		boss:          boss,
+		boss:         boss,
+		id:           graph.GraphID,
+		graph:        graph,
+		inputChannel: make(chan *graphMinionPair, BUFFERSIZE),
 	}
 }
 
 // start is a method to start the graphMinion running
 func (graphMinion *graphMinion) start(wg *sync.WaitGroup) {
+
+	// get the correct SAM formatted refs for this graph
+	graphMinion.references = graphMinion.boss.refSAMheaders[int(graphMinion.id)]
+
+	//
 	go func() {
 		for {
 
@@ -82,7 +84,7 @@ func (graphMinion *graphMinion) start(wg *sync.WaitGroup) {
 					// if an alignment was found, send them and call it a day
 					if len(alignments) != 0 {
 						for _, alignment := range alignments {
-							graphMinion.outputChannel <- alignment
+							graphMinion.boss.alignments <- alignment
 						}
 						alignmentFound = true
 						break

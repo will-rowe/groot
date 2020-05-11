@@ -311,15 +311,6 @@ func (proc *ReadMapper) Run() {
 	// set up the boss/minion pool
 	theBoss := newBoss(proc.info, proc.input)
 
-	// update the BAM from STDOUT if needed (TODO: not exposed to CLI yet)
-	if proc.info.Sketch.BAMout != "" {
-		fh, err := os.Create(proc.info.Sketch.BAMout)
-		if err != nil {
-			misc.ErrorCheck(fmt.Errorf("could not open file for BAM writing: %v", err))
-		}
-		theBoss.outFile = fh
-	}
-
 	// run the mapping
 	misc.ErrorCheck(theBoss.mapReads())
 
