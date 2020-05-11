@@ -1,0 +1,98 @@
+<svg style="isolation:auto" xmlns="http://www.w3.org/2000/svg">
+
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function(e) {
+            var elements = document.getElementsByClassName("polyGone");
+            setInterval(function() {
+                var random = Math.floor(Math.random() * elements.length);
+                elements[random].classList.remove('blink');
+                elements[random].classList.add('blink');
+            }, 1000);     
+        })
+    </script>
+    <style>
+        .hex {
+            display: block;
+            opacity: 0.4;
+        }
+        
+        .polyGone {
+            opacity: 0;
+            stroke: #F16721;
+        }
+
+        .blink {
+            animation: blinking 8s infinite;
+        }
+
+        @keyframes blinking { 
+            0% { opacity: 0.0;} 
+            40% { opacity: 0.6;} 		
+            50% { opacity: 1.0;}
+            60% { opacity: 0.6;} 
+            100% { opacity: 0.0;} 
+        }
+    </style>
+
+    <g clip-path="url(#_clipPath_N9zbOznHNPDqNF6acdrqq8DD92JuMhjn)"><polygon class="polyGone" points="-10.033,107.449,-62.036,89.541,-72.529,35.551,-31.019,-0.531,20.984,17.377,31.477,71.366" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="52.463,179.346,0.46,161.438,-10.033,107.449,31.477,71.366,83.48,89.274,93.973,143.264" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="21.446,269.418,-30.557,251.51,-41.05,197.52,0.46,161.438,52.463,179.346,62.956,233.336" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="83.48,89.274,31.477,71.366,20.984,17.377,62.494,-18.706,114.497,-0.798,124.99,53.192" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="176.993,71.099,124.99,53.192,114.497,-0.798,156.007,-36.88,208.01,-18.973,218.503,35.017" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="270.49,52.67,218.487,34.762,207.994,-19.227,249.504,-55.31,301.507,-37.402,312,16.588" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="83.942,341.315,31.939,323.408,21.446,269.418,62.956,233.336,114.959,251.243,125.452,305.233" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="52.926,431.387,0.923,413.48,-9.571,359.49,31.939,323.408,83.942,341.315,94.436,395.305" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1112.093,42.697,1146.018,-0.594,1200.471,7.141,1221,58.166,1187.075,101.457,1132.622,93.723" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1023.715,78.254,1057.64,34.963,1112.093,42.697,1132.622,93.723,1098.697,137.013,1044.243,129.279" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="948.733,19.494,982.658,-23.797,1037.111,-16.062,1057.64,34.963,1023.715,78.254,969.261,70.519" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1098.697,137.013,1132.622,93.723,1187.075,101.457,1207.604,152.482,1173.679,195.773,1119.225,188.039" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1115.659,769.291,1149.584,726,1204.038,733.734,1224.566,784.76,1190.641,828.051,1136.188,820.316" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1129.056,676.24,1162.98,632.949,1217.434,640.684,1237.962,691.709,1204.038,735,1149.584,727.266" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1030.413,804.291,1064.338,761,1118.791,768.734,1139.32,819.76,1105.395,863.051,1050.941,855.316" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1030.413,804.291,1064.338,761,1118.791,768.734,1139.32,819.76,1105.395,863.051,1050.941,855.316" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="867.486,782.24,901.411,738.949,955.865,746.684,976.393,797.709,942.468,841,888.015,833.266" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="778.674,817.487,812.599,774.196,867.053,781.931,887.581,832.956,853.656,876.247,799.203,868.512" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="860.354,55.051,894.279,11.76,948.733,19.494,969.261,70.519,935.336,113.81,880.883,106.076" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="785.372,-3.709,819.297,-47,873.751,-39.266,894.279,11.76,860.354,55.051,805.901,47.316" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1044.243,710.531,1078.168,667.24,1132.622,674.975,1153.15,726,1119.225,769.291,1064.772,761.556" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="1142.886,582.24,1176.811,538.949,1231.264,546.684,1251.793,597.709,1217.868,641,1163.414,633.266" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="43.605,771.383,93.607,794.293,98.766,849.051,53.925,880.898,3.924,857.988,-1.236,803.23" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="137.217,762.741,187.218,785.651,192.378,840.409,147.537,872.256,97.536,849.346,92.376,794.588" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="-10.285,696.632,39.716,719.542,44.876,774.3,0.034,806.147,-49.967,783.237,-55.126,728.479" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="-10.285,696.632,39.716,719.542,44.876,774.3,0.034,806.147,-49.967,783.237,-55.126,728.479" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="-26.784,533.05,23.217,555.96,28.377,610.718,-16.465,642.565,-66.466,619.655,-71.626,564.897" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="84.118,688.247,134.119,711.157,139.279,765.914,94.437,797.762,44.436,774.851,39.276,720.094" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="polyGone" points="231.853,754.3,281.855,777.21,287.014,831.967,242.173,863.815,192.172,840.904,187.012,786.147" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+    </g>
+
+    <g clip-path="url(#_clipPath_N9zbOznHNPDqNF6acdrqq8DD92JuMhjn)"><polygon class="hex" points="-10.033,107.449,-62.036,89.541,-72.529,35.551,-31.019,-0.531,20.984,17.377,31.477,71.366" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="52.463,179.346,0.46,161.438,-10.033,107.449,31.477,71.366,83.48,89.274,93.973,143.264" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="21.446,269.418,-30.557,251.51,-41.05,197.52,0.46,161.438,52.463,179.346,62.956,233.336" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="83.48,89.274,31.477,71.366,20.984,17.377,62.494,-18.706,114.497,-0.798,124.99,53.192" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="176.993,71.099,124.99,53.192,114.497,-0.798,156.007,-36.88,208.01,-18.973,218.503,35.017" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="270.49,52.67,218.487,34.762,207.994,-19.227,249.504,-55.31,301.507,-37.402,312,16.588" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="83.942,341.315,31.939,323.408,21.446,269.418,62.956,233.336,114.959,251.243,125.452,305.233" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="52.926,431.387,0.923,413.48,-9.571,359.49,31.939,323.408,83.942,341.315,94.436,395.305" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1112.093,42.697,1146.018,-0.594,1200.471,7.141,1221,58.166,1187.075,101.457,1132.622,93.723" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1023.715,78.254,1057.64,34.963,1112.093,42.697,1132.622,93.723,1098.697,137.013,1044.243,129.279" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="948.733,19.494,982.658,-23.797,1037.111,-16.062,1057.64,34.963,1023.715,78.254,969.261,70.519" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1098.697,137.013,1132.622,93.723,1187.075,101.457,1207.604,152.482,1173.679,195.773,1119.225,188.039" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1115.659,769.291,1149.584,726,1204.038,733.734,1224.566,784.76,1190.641,828.051,1136.188,820.316" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1129.056,676.24,1162.98,632.949,1217.434,640.684,1237.962,691.709,1204.038,735,1149.584,727.266" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1030.413,804.291,1064.338,761,1118.791,768.734,1139.32,819.76,1105.395,863.051,1050.941,855.316" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1030.413,804.291,1064.338,761,1118.791,768.734,1139.32,819.76,1105.395,863.051,1050.941,855.316" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="867.486,782.24,901.411,738.949,955.865,746.684,976.393,797.709,942.468,841,888.015,833.266" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="778.674,817.487,812.599,774.196,867.053,781.931,887.581,832.956,853.656,876.247,799.203,868.512" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="860.354,55.051,894.279,11.76,948.733,19.494,969.261,70.519,935.336,113.81,880.883,106.076" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="785.372,-3.709,819.297,-47,873.751,-39.266,894.279,11.76,860.354,55.051,805.901,47.316" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1044.243,710.531,1078.168,667.24,1132.622,674.975,1153.15,726,1119.225,769.291,1064.772,761.556" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="1142.886,582.24,1176.811,538.949,1231.264,546.684,1251.793,597.709,1217.868,641,1163.414,633.266" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="43.605,771.383,93.607,794.293,98.766,849.051,53.925,880.898,3.924,857.988,-1.236,803.23" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="137.217,762.741,187.218,785.651,192.378,840.409,147.537,872.256,97.536,849.346,92.376,794.588" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="-10.285,696.632,39.716,719.542,44.876,774.3,0.034,806.147,-49.967,783.237,-55.126,728.479" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="-10.285,696.632,39.716,719.542,44.876,774.3,0.034,806.147,-49.967,783.237,-55.126,728.479" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="-26.784,533.05,23.217,555.96,28.377,610.718,-16.465,642.565,-66.466,619.655,-71.626,564.897" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="84.118,688.247,134.119,711.157,139.279,765.914,94.437,797.762,44.436,774.851,39.276,720.094" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+        <polygon class="hex" points="231.853,754.3,281.855,777.21,287.014,831.967,242.173,863.815,192.172,840.904,187.012,786.147" fill="none" stroke-width="4" stroke="#E9DBC5" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="3"></polygon>
+    </g>
+</svg>

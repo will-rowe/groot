@@ -1,0 +1,21 @@
+{
+    "name": "baby-groot",
+    "version": "0.0.1",
+    "description": "WASM Port of GROOT",
+    "main": "bundle.js",
+    "scripts": {
+        "build": "browserify streamer.js --s fastqStreamer > bundle.js"
+    },
+    "author": "Will Rowe",
+    "license": "MIT",
+    "dependencies": {
+        "fastqstream": "^0.1.0",
+        "filestream": "^5.0.0",
+        "fs": "0.0.1-security",
+        "peek-stream": "^1.1.3",
+        "readline": "^1.3.0",
+        "require": "^2.4.20",
+        "through2": "^3.0.1",
+        "zlib": "^1.0.5"
+    }
+}

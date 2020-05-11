@@ -1,0 +1,198 @@
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+    <title>Baby GROOT</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="assets/css/main.css" type="text/css">
+</head>
+
+<body>
+    <div id="wrapper"></div>
+    <div id="spinner"></div>
+    <div class="overlay">
+        <object>
+
+        </object>
+        <!---
+        <object type="image/svg+xml" data="assets/images/overlay.svg">
+            <img src="https://github.com/will-rowe/groot/raw/master/paper/img/misc/groot-logo.png">
+        </object>
+        --->
+    </div>
+
+    <div id="main">
+
+        <!-- Header -->
+        <div class="header" id="header">
+
+            <!-- Logo -->
+            <object id="logo-animated" type="image/svg+xml" data="assets/images/baby-groot.svg">
+                <img src="https://github.com/will-rowe/groot/raw/master/misc/groot-logo.png" alt="logo">
+            </object>
+
+            <!-- Status bar -->
+            <div id="status">
+                <p>> starting GROOT...</p>
+            </div>
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="nav">
+                <ul>
+                    <li>
+                        <a id="inputIcon" class="fa fa-folder modal-button" href="#inputModal"></a>
+                    </li>
+                    <li>
+                        <a id="paramIcon" class="fa fa-sliders-h modal-button" href="#parametersModal"></a>
+                    </li>
+                    <li>
+                        <a id="startIcon" class="fa fa-play"></a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Input modal -->
+            <div id="inputModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal">&#215;</span>
+                    <h2>Select Files</h2>
+                    <hr />
+
+                    <p>select FASTQ files</p>
+                    <div class="file-upload" id="fastqSelecter">
+                        <div class="file-select">
+                            <div class="file-select-button" id="fastqFileName">browse </div>
+                            <div class="file-select-name" id="noFile">no file selected...</div>
+                            <input type="file" name="fastqUploader[]" id="fastqUploader" multiple>
+                        </div>
+                    </div>
+
+                    <button onclick="closeModal('inputModal')"><span>done</span></button>
+
+                </div>
+            </div>
+
+            <!-- Parameters modal -->
+            <div id="parametersModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal">&#215;</span>
+                    <h2>Set parameters</h2>
+                    <sub>note: the defaults are pretty good!</sub>
+                    <hr />
+
+                    <p title="cThresh">Containment threshold (<output id="cThreshValue">0.99</output>):</p>
+                    <input type="range" min=0 max=1 value=0.99 step=0.01 id="cThresh" oninput="cThreshValue.value = cThresh.value">
+
+                    <p title="mKmerCov">Min. k-mer coverage (<output id="mKmerCovValue">10</output>):</p>
+                    <input type="range" min="0" max="100" value="10" step="1" id="mKmerCov" oninput="mKmerCovValue.value = mKmerCov.value">
+
+
+                    <!-- INDEX SELECTER -->
+                    <p>Change the index:</p>
+                    <select class="select-css" id="indexSelecter">
+                        <option value="groot-files/groot.index" selected>ARG-ANNOT (default)</option>
+                        <option value="index 2" disabled>index 2</option>
+                        <option value="index3" disabled>index 3</option>
+                    </select>
+
+                    <br />
+                    <button onclick="updateParameters(cThresh.value, mKmerCov.value); closeModal('parametersModal'); iconUpdate('paramIcon'); statusUpdate('status', '> parameters are set')"><span>set
+                            these
+                            parameters!</span></button>
+                    <br />
+                </div>
+            </div>
+
+            <!-- Results modal -->
+            <div id="resultsModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal">&#215;</span>
+                    <h2>GROOT RESULTS:</h2>
+                    <hr />
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Gene</th>
+                                <th>Abundance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsContent"></tbody>
+                    </table>
+                    <div id="runTime"></div>
+                    <br />
+                    <button onclick="javascript:history.go(0)"><span>reload app</span></button>
+                    <br />
+                </div>
+            </div>
+
+            <!-- Help modal -->
+            <div id="helpModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal">&#215;</span>
+                    <h2>GROOT:</h2>
+                    <hr />
+
+                    <p>
+                        I AM <a>GROOT</a>!
+                    </p>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <a class="fa fa-power-off" id="close"></a>
+            <a class="fa fa-redo-alt" href="javascript:history.go(0)"></a>
+            <a class="fa fa-question-circle modal-button" href="#helpModal"></a>
+        </div>
+    </div>
+
+    <!--- External JS --->
+    <script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-90659329-2" type="text/javascript"></script>
+
+    <!--- JS for WASM --->
+    <script src="assets/js/wasm_exec.js" type="text/javascript"></script>
+    <script src="assets/js/utils.js" type="text/javascript"></script>
+    <script src="assets/js/bundle.js" type="text/javascript"></script>
+
+    <!--- JS for modals --->
+    <script type="text/javascript">
+        var btn = document.querySelectorAll(".modal-button");
+        var modals = document.querySelectorAll('.modal');
+        var spans = document.getElementsByClassName("close-modal");
+        for (var i = 0; i < btn.length; i++) {
+            btn[i].onclick = function(e) {
+                e.preventDefault();
+                modal = document.querySelector(e.target.getAttribute("href"));
+                modal.style.display = "block";
+            }
+        }
+        for (var i = 0; i < spans.length; i++) {
+            spans[i].onclick = function() {
+                for (var index in modals) {
+                    if (typeof modals[index].style !== 'undefined') modals[index].style.display = "none";
+                }
+            }
+        }
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                for (var index in modals) {
+                    if (typeof modals[index].style !== 'undefined') modals[index].style.display = "none";
+                }
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = "none";
+        }
+    </script>
+
+</body>
+
+</html>
