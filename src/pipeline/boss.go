@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -143,6 +144,11 @@ func (theBoss *theBoss) mapReads() error {
 
 			// start the main processing loop
 			for {
+
+				// if this is WASM - trigger the GC after a while
+				if runtime.GOOS == "js" && receivedReads%1000 == 0 {
+					runtime.GC()
+				}
 
 				// pull reads from queue until done
 				read, ok := <-theBoss.reads
