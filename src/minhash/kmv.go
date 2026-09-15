@@ -18,10 +18,11 @@ type KMVsketch struct {
 
 // NewKMVsketch is the constructor for a KMVsketch data structure
 func NewKMVsketch(k, s uint) *KMVsketch {
+	intHeap := make(IntHeap, 0, s)
 	newSketch := &KMVsketch{
 		kmerSize:   k,
 		sketchSize: s,
-		heap:       &IntHeap{},
+		heap:       &intHeap,
 	}
 
 	// init the heap
@@ -49,9 +50,6 @@ func (KMVsketch *KMVsketch) AddSequence(sequence []byte) error {
 		// if the heap isn't full yet, go ahead and add the hash
 		if len(*KMVsketch.heap) < int(KMVsketch.sketchSize) {
 			heap.Push(KMVsketch.heap, hv)
-
-			// re-establish the heap ordering after adding the new hash
-			heap.Fix(KMVsketch.heap, 0)
 
 			// or if the incoming hash is smaller than the hash at the top of the heap, add the hash and remove the larger one from the heap
 		} else if hv < (*KMVsketch.heap)[0] {
