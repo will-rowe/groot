@@ -96,6 +96,7 @@ func runIndex() {
 	// record the runtime information for the index sub command
 	info := &pipeline.Info{
 		Version:       version.GetVersion(),
+		NumProc:       *proc,
 		KmerSize:      *kmerSize,
 		SketchSize:    *sketchSize,
 		WindowSize:    *windowSize,
