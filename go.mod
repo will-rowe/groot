@@ -1,6 +1,6 @@
 module github.com/will-rowe/groot
 
-go 1.14
+go 1.27
 
 require (
 	github.com/adam-hanna/arrayOperations v0.2.6

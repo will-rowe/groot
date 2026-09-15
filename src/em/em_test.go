@@ -4,6 +4,6 @@ import (
 	"testing"
 )
 
-func testEMconstructor(t *testing.T) {
+func TestEMconstructor(t *testing.T) {
 	t.Log("need some tests...")
 }

@@ -5,7 +5,7 @@
 set -e
 
 # test parameters
-TESTDIR=tmp-for-groot-travis
+TESTDIR=tmp-for-groot-gitlab
 READS=../data/bla-b7-150bp-5x.fq
 THREADS=1
 READ_LEN=150
@@ -17,7 +17,7 @@ COV=0.97
 # make a test dir
 mkdir $TESTDIR && cd $TESTDIR
 
-# build the prog
+# build the prog
 go build -o groot ../../
 
 # get the db
@@ -26,12 +26,10 @@ echo "downloading the ARG-annot database..."
 
 # index the ARGannot database
 echo "indexing the ARG-annot database..."
-#gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" \
 ./groot index -m arg-annot.90 -i index -w $READ_LEN -k $K_SIZE -s $SIG_SIZE -p $THREADS
 
 # align the test reads
 echo "aligning reads..."
-#gtime -f "\tmax. resident set size (kb): %M\n\tCPU usage: %P\n\ttime (wall clock): %E\n\ttime (CPU seconds): %S\n" \
 ./groot align -i index -f $READS -p $THREADS -t $CT > groot.bam
 
 # report
@@ -43,11 +41,11 @@ echo "checking..."
 numReportedARGs=`wc groot.report | awk '{print $1}'`
 if [[ $numReportedARGs == "0" ]]; then
     echo "failed: no ARGs reported by GROOT";
-    exit 1; 
+    exit 1;
 fi
 if [[ $numReportedARGs != "1" ]]; then
     echo "failed: too many ARGs reported by GROOT - " $numReportedARGs;
-    exit 1; 
+    exit 1;
 fi
 reportedARG=`cut -f 1 groot.report`
 if [[ $reportedARG != "argannot~~~(Bla)B-7~~~AF189304:1-747" ]]; then

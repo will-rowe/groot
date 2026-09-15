@@ -73,7 +73,7 @@ func init() {
 }
 
 /*
-  A function to check user supplied parameters
+A function to check user supplied parameters
 */
 func getParamCheck() error {
 	// check requested db exists in groot records
@@ -105,7 +105,7 @@ func getParamCheck() error {
 }
 
 /*
-  A function to download the database tarball
+A function to download the database tarball
 */
 func DownloadFile(savePath string, url string) error {
 	outFile, err := os.Create(savePath)
@@ -118,6 +118,9 @@ func DownloadFile(savePath string, url string) error {
 		return err
 	}
 	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("download failed with HTTP status %s", response.Status)
+	}
 	_, err = io.Copy(outFile, response.Body)
 	if err != nil {
 		return err
@@ -126,7 +129,7 @@ func DownloadFile(savePath string, url string) error {
 }
 
 /*
-  A function to calculate md5
+A function to calculate md5
 */
 func getMD5(savePath string) error {
 	var dbMD5 string
@@ -142,14 +145,18 @@ func getMD5(savePath string) error {
 	hashInBytes := hash.Sum(nil)[:16]
 	dbMD5 = hex.EncodeToString(hashInBytes)
 	lookup := fmt.Sprintf("%v.%v", *database, *identity)
-	if dbMD5 != md5sums[lookup] {
+	expected, ok := md5sums[lookup]
+	if !ok {
+		return fmt.Errorf("no md5sum recorded for %s", lookup)
+	}
+	if dbMD5 != expected {
 		return errors.New("md5sum for downloaded tarball did not match record")
 	}
 	return nil
 }
 
 /*
-  The main function for the get sub-command
+The main function for the get sub-command
 */
 func runGet() {
 	if err := getParamCheck(); err != nil {

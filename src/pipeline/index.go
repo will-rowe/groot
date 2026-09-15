@@ -35,38 +35,67 @@ func (proc *MSAconverter) Connect(input []string) {
 
 // Run is the method to run this process, which satisfies the pipeline interface
 func (proc *MSAconverter) Run() {
-	var wg sync.WaitGroup
-	wg.Add(len(proc.input))
-
-	// load each MSA outside of the go-routines to prevent 'too many open files' error on OSX
-	for i, msaFile := range proc.input {
-		msa, err := gfa.ReadMSA(msaFile)
-		misc.ErrorCheck(err)
-		go func(msaID int, msa *multi.Multi) {
-			defer wg.Done()
-
-			// convert the MSA to a GFA instance
-			newGFA, err := gfa.MSA2GFA(msa)
-			misc.ErrorCheck(err)
-
-			// create a GrootGraph
-			grootGraph, err := graph.CreateGrootGraph(newGFA, msaID)
-			if err != nil {
-				misc.ErrorCheck(err)
-			}
-
-			// mark the graph has masked if the requested window size is larger than the smallest seq in the graph
-			for i, seqLen := range grootGraph.Lengths {
-				if seqLen < proc.info.WindowSize {
-					log.Printf("\tsequence for %v is shorter than window size (%d vs. %d), skipping graph", string(grootGraph.Paths[i]), seqLen, proc.info.WindowSize)
-					grootGraph.Masked = true
-					break
-				}
-			}
-			proc.output <- grootGraph
-		}(i, msa)
+	workerCount := proc.info.NumProc
+	if workerCount < 1 {
+		workerCount = 1
 	}
-	wg.Wait()
+	if workerCount > len(proc.input) {
+		workerCount = len(proc.input)
+	}
+	if workerCount == 0 {
+		close(proc.output)
+		return
+	}
+
+	type msaTask struct {
+		index int
+		msa   *multi.Multi
+	}
+
+	jobs := make(chan msaTask)
+	results := make(chan *graph.GrootGraph, BUFFERSIZE)
+	var wg sync.WaitGroup
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			defer wg.Done()
+			for task := range jobs {
+				// convert the MSA to a GFA instance
+				newGFA, err := gfa.MSA2GFA(task.msa)
+				misc.ErrorCheck(err)
+
+				// create a GrootGraph
+				grootGraph, err := graph.CreateGrootGraph(newGFA, task.index)
+				if err != nil {
+					misc.ErrorCheck(err)
+				}
+
+				// mark the graph has masked if the requested window size is larger than the smallest seq in the graph
+				for i, seqLen := range grootGraph.Lengths {
+					if seqLen < proc.info.WindowSize {
+						log.Printf("\tsequence for %v is shorter than window size (%d vs. %d), skipping graph", string(grootGraph.Paths[i]), seqLen, proc.info.WindowSize)
+						grootGraph.Masked = true
+						break
+					}
+				}
+				results <- grootGraph
+			}
+		}()
+	}
+	go func() {
+		for i, msaFile := range proc.input {
+			msa, err := gfa.ReadMSA(msaFile)
+			misc.ErrorCheck(err)
+			jobs <- msaTask{index: i, msa: msa}
+		}
+		close(jobs)
+		wg.Wait()
+		close(results)
+	}()
+
+	for grootGraph := range results {
+		proc.output <- grootGraph
+	}
 	close(proc.output)
 }
 
@@ -90,64 +119,70 @@ func (proc *GraphSketcher) Connect(previous *MSAconverter) {
 // Run is the method to run this process, which satisfies the pipeline interface
 func (proc *GraphSketcher) Run() {
 	defer close(proc.output)
-
-	// after sketching all the received graphs, add the graphs to a store and save it
-	graphChan := make(chan *graph.GrootGraph)
 	graphStore := make(graph.Store)
-
-	// receive the graphs to be sketched
+	workerCount := proc.info.NumProc
+	if workerCount < 1 {
+		workerCount = 1
+	}
+	type graphSketchResult struct {
+		graph   *graph.GrootGraph
+		windows map[string]lshe.Keys
+	}
+	results := make(chan graphSketchResult, BUFFERSIZE)
 	var wg sync.WaitGroup
-	for newGraph := range proc.input {
-		wg.Add(1)
-		go func(grootGraph *graph.GrootGraph) {
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			defer wg.Done()
+			for newGraph := range proc.input {
+				var windows map[string]lshe.Keys
+				if !newGraph.Masked {
 
-			if !grootGraph.Masked {
-
-				// create sketch for each window in the graph (merging consecutive windows with identical sketches)
-				windows, err := grootGraph.WindowGraph(proc.info.WindowSize, proc.info.KmerSize, proc.info.SketchSize)
-				misc.ErrorCheck(err)
-
-				// send the windows on the indexing
-				proc.output <- windows
+					// create sketch for each window in the graph (merging consecutive windows with identical sketches)
+					var err error
+					windows, err = newGraph.WindowGraph(proc.info.WindowSize, proc.info.KmerSize, proc.info.SketchSize)
+					misc.ErrorCheck(err)
+				}
+				results <- graphSketchResult{graph: newGraph, windows: windows}
 			}
-
-			// this graph is sketched, now send it on to be saved in the current process
-			graphChan <- grootGraph
-			wg.Done()
-		}(newGraph)
+		}()
 	}
 	go func() {
 		wg.Wait()
-		close(graphChan)
+		close(results)
 	}()
-
-	// collect the graphs
 	numMasked := 0
 	numWindows := 0
 	propDistinctSketches := 0.0
-	for sketchedGraph := range graphChan {
-		if sketchedGraph.Masked {
-			numMasked++
-		} else {
 
-			// get the number of windows sketched, the proportion which resulted in distinct sketches, and the max span between merged sketches
-			nw, nds, ms, err := sketchedGraph.GetSketchStats()
-			misc.ErrorCheck(err)
-			propDistinct := float64(nds) / float64(nw)
-
-			// check for the max span between identical sketches
-			if ms > proc.info.MaxSketchSpan {
-				refs, err := sketchedGraph.GetRefIDs()
-				misc.ErrorCheck(err)
-				misc.ErrorCheck(fmt.Errorf("graph (ID: %d) encountered where %d sketches in a row were merged (max permitted span: %d)\nencoded seqs: %v", sketchedGraph.GraphID, ms, proc.info.MaxSketchSpan, refs))
-			}
-
-			numWindows += nw
-			propDistinctSketches += propDistinct
+	for result := range results {
+		if result.windows != nil {
+			proc.output <- result.windows
 		}
 
 		// store the graph
-		graphStore[sketchedGraph.GraphID] = sketchedGraph
+		graphStore[result.graph.GraphID] = result.graph
+
+		// collect stats inline so we don't need a second pass over a channel
+		if result.graph.Masked {
+			numMasked++
+			continue
+		}
+
+		// get the number of windows sketched, the proportion which resulted in distinct sketches, and the max span between merged sketches
+		nw, nds, ms, err := result.graph.GetSketchStats()
+		misc.ErrorCheck(err)
+		propDistinct := float64(nds) / float64(nw)
+
+		// check for the max span between identical sketches
+		if ms > proc.info.MaxSketchSpan {
+			refs, err := result.graph.GetRefIDs()
+			misc.ErrorCheck(err)
+			misc.ErrorCheck(fmt.Errorf("graph (ID: %d) encountered where %d sketches in a row were merged (max permitted span: %d)\nencoded seqs: %v", result.graph.GraphID, ms, proc.info.MaxSketchSpan, refs))
+		}
+
+		numWindows += nw
+		propDistinctSketches += propDistinct
 	}
 
 	// check some graphs have been sketched

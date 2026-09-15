@@ -1,5 +1,5 @@
 /*
-	the seqio package contains custom types and methods for holding and processing sequence data
+the seqio package contains custom types and methods for holding and processing sequence data
 */
 package seqio
 
@@ -38,33 +38,24 @@ type FASTQread struct {
 
 // RunMinHash is a method to create a minhash sketch for the sequence
 func (Sequence *Sequence) RunMinHash(kmerSize, sketchSize int, kmv bool, bf *minhash.BloomFilter) ([]uint64, error) {
-
-	// create the MinHash data structure, using the specified algorithm flavour
-	var mh minhash.MinHash
 	if kmv {
-		mh = minhash.NewKMVsketch(uint(kmerSize), uint(sketchSize))
-	} else {
-		mh = minhash.NewKHFsketch(uint(kmerSize), uint(sketchSize))
-	}
-
-	// use the AddSequence method to populate the MinHash
-	err := mh.AddSequence(Sequence.Seq)
-
-	// get the sketch
-	sketch := mh.GetSketch()
-
-	// if the sketch isn't at capacity (in the case of BottomK sketches), fill up the remainder with 0s
-	if kmv && len(sketch) != sketchSize {
-		padding := make([]uint64, sketchSize-len(sketch))
-		for i := 0; i < len(padding); i++ {
-			padding[i] = 0
+		mh := minhash.NewKMVsketch(uint(kmerSize), uint(sketchSize))
+		if err := mh.AddSequence(Sequence.Seq); err != nil {
+			return nil, err
 		}
-		sketch = append(sketch, padding...)
-
+		sketch := mh.GetSketch()
+		if len(sketch) != sketchSize {
+			sketch = append(sketch, make([]uint64, sketchSize-len(sketch))...)
+		}
+		return sketch, nil
 	}
 
-	// return the MinHash sketch and any error
-	return sketch, err
+	mh := minhash.NewKHFsketch(uint(kmerSize), uint(sketchSize))
+	if err := mh.AddSequence(Sequence.Seq); err != nil {
+		return nil, err
+	}
+
+	return mh.GetSketch(), nil
 }
 
 // BaseCheck is a method to check for ACTGN bases and also to convert bases to upper case

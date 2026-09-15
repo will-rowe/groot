@@ -1,16 +1,20 @@
+# GROOT
+
 <div align="center">
-    <img src="misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
-    <h3><a style="color:#D5672C">G</a>raphing <a style="color:#D5672C">R</a>esistance <a style="color:#D5672C">O</a>ut <a style="color:#D5672C">O</a>f me<a style="color:#D5672C">T</a>agenomes</h3>
-    <hr>
-    <a href="https://travis-ci.org/will-rowe/groot"><img src="https://travis-ci.org/will-rowe/groot.svg?branch=master" alt="travis"></a>
-    <a href='http://groot-documentation.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/groot-documentation/badge/?version=latest' alt='Documentation Status' /></a>
-    <a href="https://goreportcard.com/report/github.com/will-rowe/groot"><img src="https://goreportcard.com/badge/github.com/will-rowe/groot" alt="reportcard"></a>
-    <a href="https://github.com/will-rowe/groot/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License"></a>
-    <a href="https://zenodo.org/badge/latestdoi/117543539"><img src="https://zenodo.org/badge/117543539.svg" alt="DOI"></a>
-    <a href="https://gitter.im/groot-help/Lobby"><img src="https://img.shields.io/badge/chat-gitter-8A2BE2.svg" alt="bioconda"></a>
-    <a href="https://bioconda.github.io/recipes/groot/README.html"><img src="https://anaconda.org/bioconda/groot/badges/downloads.svg" alt="bioconda"></a>
-    <a href="https://media.giphy.com/media/3o7budMRwZvNGJ3pyE/giphy.gif"><img src="https://img.shields.io/badge/i%20am-groot-green.svg" alt="bioconda"></a>
+  <img src="misc/groot-logo-with-text.png?raw=true?" alt="groot-logo" width="250">
+  <h3><a style="color:#D5672C">G</a>raphing <a style="color:#D5672C">R</a>esistance <a style="color:#D5672C">O</a>ut <a style="color:#D5672C">O</a>f me<a style="color:#D5672C">T</a>agenomes</h3>
+  <hr>
+  <a href="https://gitlab.com/will-rowe/groot/-/pipelines"><img src="https://img.shields.io/badge/ci-gitlab-orange.svg" alt="gitlab-ci"></a>
+  <a href='http://groot-documentation.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/groot-documentation/badge/?version=latest' alt='Documentation Status' /></a>
+  <a href="https://goreportcard.com/report/github.com/will-rowe/groot"><img src="https://goreportcard.com/badge/github.com/will-rowe/groot" alt="reportcard"></a>
+  <a href="https://github.com/will-rowe/groot/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License"></a>
+  <a href="https://zenodo.org/badge/latestdoi/117543539"><img src="https://zenodo.org/badge/117543539.svg" alt="DOI"></a>
+  <a href="https://gitter.im/groot-help/Lobby"><img src="https://img.shields.io/badge/chat-gitter-8A2BE2.svg" alt="gitter"></a>
+  <a href="https://bioconda.github.io/recipes/groot/README.html"><img src="https://anaconda.org/bioconda/groot/badges/downloads.svg" alt="bioconda"></a>
+  <a href="https://media.giphy.com/media/3o7budMRwZvNGJ3pyE/giphy.gif"><img src="https://img.shields.io/badge/i%20am-groot-green.svg" alt="i am groot"></a>
 </div>
+
+---
 
 ---
 
@@ -42,7 +46,7 @@ brew install brewsci/bio/groot
 
 ### Source
 
-`GROOT` is written in Go (v1.14) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
+`GROOT` is written in Go (v1.27) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
 
 ```bash
 # Clone this repository
