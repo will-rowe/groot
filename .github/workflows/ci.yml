@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - bug-fixes
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+          cache: true
+
+      - name: Download dependencies
+        run: go get -d -t -v ./...
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Build
+        run: go build -v ./...

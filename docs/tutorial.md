@@ -284,7 +284,7 @@ Now we have a set of ARGs we know are present in one or more samples, we might w
 Download the full ARG-ANNOT set of genes and then index with samtools:
 
 ```bash
-wget https://github.com/will-rowe/groot/raw/master/db/full-ARG-databases/arg-annot-db/argannot-args.fna
+wget https://github.com/will-rowe/groot/raw/main/db/full-ARG-databases/arg-annot-db/argannot-args.fna
 samtools faidx argannot-args.fna
 ```
 
