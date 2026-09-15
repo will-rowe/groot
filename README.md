@@ -42,7 +42,7 @@ brew install brewsci/bio/groot
 
 ### Source
 
-`GROOT` is written in Go (v1.14) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
+`GROOT` is written in Go (v1.27) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
 
 ```bash
 # Clone this repository
