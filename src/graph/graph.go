@@ -257,7 +257,8 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 
 		if existingWindowLocation, ok := windowLookup[key]; ok {
 			duplicateSketch := false
-			for _, existingWindow := range existingWindowLocation {
+			for i := range existingWindowLocation {
+				existingWindow := &existingWindowLocation[i]
 				if misc.Uint64SliceEqual(existingWindow.Sketch, window.Sketch) {
 					for node, freq := range window.ContainedNodes {
 						existingWindow.ContainedNodes[node] += freq
@@ -314,7 +315,6 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 
 		// hold a window until a new sketch is encountered
 		var windowHolder lshe.Key
-		sketchSent := false
 
 		// start windowing the path sequence
 		numWindows := pathLength - windowSize + 1
@@ -334,7 +334,6 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 				// if sketch doesn't match previous we send the old window on, otherwise we merge current window into previous one
 				if !misc.Uint64SliceEqual(windowHolder.Sketch, sketch) {
 					addWindow(windowHolder)
-					sketchSent = true
 				} else {
 					merge = true
 				}
@@ -364,8 +363,8 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 				windowHolder.MergeSpan++
 			}
 
-			// if we've got to the final window and no sketches have been sent (i.e. long window or looong merge), send the sketch
-			if !sketchSent && i == (numWindows-1) {
+			// always flush the final window holder; earlier flushes only apply to the previous holder
+			if i == (numWindows - 1) {
 				addWindow(windowHolder)
 			}
 		}
