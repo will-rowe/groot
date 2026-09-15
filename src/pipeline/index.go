@@ -9,6 +9,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/biogo/biogo/seq/multi"
 	"github.com/will-rowe/gfa"
 	"github.com/will-rowe/groot/src/graph"
 	"github.com/will-rowe/groot/src/lshe"
@@ -47,8 +48,8 @@ func (proc *MSAconverter) Run() {
 	}
 
 	type msaTask struct {
-		index   int
-		msaFile string
+		index int
+		msa   *multi.Multi
 	}
 
 	jobs := make(chan msaTask)
@@ -59,11 +60,8 @@ func (proc *MSAconverter) Run() {
 		go func() {
 			defer wg.Done()
 			for task := range jobs {
-				msa, err := gfa.ReadMSA(task.msaFile)
-				misc.ErrorCheck(err)
-
 				// convert the MSA to a GFA instance
-				newGFA, err := gfa.MSA2GFA(msa)
+				newGFA, err := gfa.MSA2GFA(task.msa)
 				misc.ErrorCheck(err)
 
 				// create a GrootGraph
@@ -86,7 +84,9 @@ func (proc *MSAconverter) Run() {
 	}
 	go func() {
 		for i, msaFile := range proc.input {
-			jobs <- msaTask{index: i, msaFile: msaFile}
+			msa, err := gfa.ReadMSA(msaFile)
+			misc.ErrorCheck(err)
+			jobs <- msaTask{index: i, msa: msa}
 		}
 		close(jobs)
 		wg.Wait()
