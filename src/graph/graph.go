@@ -252,7 +252,10 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 	}
 
 	windowLookup := make(map[windowLocation]lshe.Keys)
-	addWindow := func(window lshe.Key) {
+addWindow := func(window lshe.Key) {
+		if window.MergeSpan > GrootGraph.maxSpan {
+			GrootGraph.maxSpan = window.MergeSpan
+		}
 		key := windowLocation{graphID: window.GraphID, node: window.Node, offset: window.OffSet}
 
 		if existingWindowLocation, ok := windowLookup[key]; ok {
