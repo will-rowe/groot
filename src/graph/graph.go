@@ -4,8 +4,10 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"runtime"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/will-rowe/gfa"
 	"github.com/will-rowe/groot/src/lshe"
@@ -281,93 +283,106 @@ func (GrootGraph *GrootGraph) WindowGraph(windowSize, kmerSize, sketchSize int) 
 		}
 	}
 
-	for pathID := range GrootGraph.Paths {
+	pathWindows := make(chan lshe.Key, 100)
 
-		// get the length of the linear reference for this path
-		pathLength := GrootGraph.Lengths[pathID]
+	pathJobs := make(chan uint32)
+	var pathWG sync.WaitGroup
+	workerCount := runtime.GOMAXPROCS(0)
+	if workerCount > len(GrootGraph.Paths) {
+		workerCount = len(GrootGraph.Paths)
+	}
+	if workerCount < 1 {
+		workerCount = 1
+	}
+	pathWG.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			defer pathWG.Done()
+			for pathID := range pathJobs {
+				pathLength := GrootGraph.Lengths[pathID]
+				if pathLength < windowSize {
+					panic(fmt.Errorf("graph contains sequence < window size"))
+				}
 
-		// add another debug panic here in case being asked to window graph with short seqs
-		if pathLength < windowSize {
-			return nil, fmt.Errorf("graph contains sequence < window size")
-		}
+				pathSequence := pathSeqs[pathID]
+				segs := make([]uint64, pathLength, pathLength)
+				offSets := make([]uint32, pathLength, pathLength)
+				iterator := 0
+				for _, node := range GrootGraph.SortedNodes {
+					for _, id := range node.PathIDs {
+						if id == pathID {
+							for offset := uint32(0); offset < uint32(len(node.Sequence)); offset++ {
+								segs[iterator] = node.SegmentID
+								offSets[iterator] = offset
+								iterator++
+							}
+						}
+					}
+				}
+				if iterator != pathLength {
+					panic("windowing did not traverse entire path")
+				}
 
-		// get the sequence for this path
-		pathSequence := pathSeqs[pathID]
+				var windowHolder lshe.Key
+				numWindows := pathLength - windowSize + 1
+				for i := 0; i < numWindows; i++ {
+					windowSeq := seqio.Sequence{Seq: pathSequence[i : i+windowSize]}
+					sketch, err := windowSeq.RunMinHash(kmerSize, sketchSize, false, nil)
+					if err != nil {
+						panic(err)
+					}
 
-		// for each base in the linear reference sequence, get the segmentID and offset of its location in the graph
-		segs := make([]uint64, pathLength, pathLength)
-		offSets := make([]uint32, pathLength, pathLength)
-		iterator := 0
-		for _, node := range GrootGraph.SortedNodes {
-			for _, id := range node.PathIDs {
-				if id == pathID {
-					for offset := uint32(0); offset < uint32(len(node.Sequence)); offset++ {
-						segs[iterator] = node.SegmentID
-						offSets[iterator] = offset
-						iterator++
+					merge := false
+					if i != 0 {
+						if !misc.Uint64SliceEqual(windowHolder.Sketch, sketch) {
+							pathWindows <- windowHolder
+						} else {
+							merge = true
+						}
+					}
+
+					if !merge {
+						windowHolder = lshe.Key{
+							GraphID:        GrootGraph.GraphID,
+							Node:           segs[i],
+							OffSet:         offSets[i],
+							ContainedNodes: make(map[uint64]float64, windowSize),
+							Ref:            []uint32{pathID},
+							Sketch:         sketch,
+							MergeSpan:      0,
+							WindowSize:     uint32(windowSize),
+						}
+					}
+
+					for _, y := range segs[i : i+windowSize] {
+						windowHolder.ContainedNodes[uint64(y)]++
+					}
+
+					if merge {
+						windowHolder.MergeSpan++
+					}
+
+					if i == numWindows-1 {
+						pathWindows <- windowHolder
 					}
 				}
 			}
+		}()
+	}
+	go func() {
+		for pathID := range GrootGraph.Paths {
+			pathJobs <- pathID
 		}
-		if iterator != pathLength {
-			panic("windowing did not traverse entire path")
-		}
+		close(pathJobs)
+	}()
+	go func() {
+		pathWG.Wait()
+		close(pathWindows)
+	}()
 
-		// hold a window until a new sketch is encountered
-		var windowHolder lshe.Key
-
-		// start windowing the path sequence
-		numWindows := pathLength - windowSize + 1
-		for i := 0; i < numWindows; i++ {
-
-			// sketch the current window
-			windowSeq := seqio.Sequence{Seq: pathSequence[i : i+windowSize]}
-			sketch, err := windowSeq.RunMinHash(kmerSize, sketchSize, false, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			// if this is not the first window, check if the current sketch matches the previous sketch and window
-			merge := false
-			if i != 0 {
-
-				// if sketch doesn't match previous we send the old window on, otherwise we merge current window into previous one
-				if !misc.Uint64SliceEqual(windowHolder.Sketch, sketch) {
-					addWindow(windowHolder)
-				} else {
-					merge = true
-				}
-			}
-
-			// if the first window, or we have just sent a window on, init a windowHolder
-			if !merge {
-				windowHolder = lshe.Key{
-					GraphID:        GrootGraph.GraphID,
-					Node:           segs[i],
-					OffSet:         offSets[i],
-					ContainedNodes: make(map[uint64]float64, windowSize),
-					Ref:            []uint32{pathID},
-					Sketch:         sketch,
-					MergeSpan:      0,
-					WindowSize:     uint32(windowSize),
-				}
-			}
-
-			// regardless of merge, need to add current windows nodes to the windowHolder's map
-			for _, y := range segs[i : i+windowSize] {
-				windowHolder.ContainedNodes[uint64(y)]++
-			}
-
-			// if merging, update the merge span (number of consecutive windows with same sketch)
-			if merge {
-				windowHolder.MergeSpan++
-			}
-
-			// always flush the final window holder; earlier flushes only apply to the previous holder
-			if i == (numWindows - 1) {
-				addWindow(windowHolder)
-			}
-		}
+	// collect sketched windows from all paths and merge identical windows from different paths if same start node+offset
+	for window := range pathWindows {
+		addWindow(window)
 	}
 
 	// check we've got some sketches
